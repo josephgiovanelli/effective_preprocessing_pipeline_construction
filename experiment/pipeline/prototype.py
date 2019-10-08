@@ -48,6 +48,34 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                         oparams.append((p, op_to_class[p](**v)))
                     operator = FeatureUnion(oparams)
                     operators.append((part, operator))
+                elif item[0].split('_',1)[0] == 'encode':
+                    numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
+                    operator = ColumnTransformer(
+                        transformers=[
+                            ('num', Pipeline(steps=[('identity_numerical', FunctionTransformer())]),
+                             numerical_features),
+                            ('cat', Pipeline(steps=[('encoding', globals()[item[0].split('_', 1)[-1]](**params))]),
+                             categorical_features)])
+                    operators.append((part, operator))
+                elif item[0].split('_', 1)[0] == 'normalizer':
+                    numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
+                    operator = ColumnTransformer(
+                        transformers=[
+                            ('num', Pipeline(steps=[('normalizing', globals()[item[0].split('_', 1)[-1]](**params))]),
+                             numerical_features),
+                            ('cat', Pipeline(steps=[('identity_categorical', FunctionTransformer())]),
+                             categorical_features)])
+                    operators.append((part, operator))
+                elif item[0].split('_', 1)[0] == 'discretize':
+                    numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
+                    operator = ColumnTransformer(
+                        transformers=[
+                            ('num', Pipeline(steps=[('discretizing', globals()[item[0].split('_', 1)[-1]](**params))]),
+                             numerical_features),
+                            ('cat', Pipeline(steps=[('identity', FunctionTransformer())]),
+                             categorical_features)])
+                    PrototypeSingleton.getInstance().discretizeFeatures()
+                    operators.append((part, operator))
                 else:
                     operator = globals()[item[0].split('_',1)[-1]](**params)
                     operators.append((part, operator))
