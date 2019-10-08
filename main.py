@@ -1,3 +1,4 @@
+from experiment.pipeline.PrototypeSingleton import PrototypeSingleton
 from experiment.utils import scenarios, serializer, cli, datasets
 from experiment import policies
 
@@ -18,6 +19,7 @@ def main(args):
     X, y = task.get_X_and_y()
     print(X, y)
 
+    PrototypeSingleton.getInstance().setPipeline(args.pipeline)
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,

@@ -1,26 +1,26 @@
 from imblearn.under_sampling import NearMiss, CondensedNearestNeighbour
 from imblearn.over_sampling import SMOTE
+from sklearn.compose import ColumnTransformer
+from sklearn.decomposition import PCA
+from sklearn.feature_selection import SelectKBest
+from sklearn.impute import SimpleImputer
+from sklearn.impute._iterative import IterativeImputer
+from sklearn.pipeline import FeatureUnion
+from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler, PowerTransformer, KBinsDiscretizer, \
+    Binarizer, OneHotEncoder, OrdinalEncoder, FunctionTransformer
+
 from imblearn.pipeline import Pipeline
 
 from sklearn.decomposition import PCA
-#from sklearn.decomposition import TruncatedSVD as PCA
 from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import FeatureUnion
-from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler, PowerTransformer
 
-from .utils import generate_domain_space
+from experiment.pipeline.PrototypeSingleton import PrototypeSingleton
 
-PROTOTYPE = {
-    "rebalance": [None, NearMiss(), CondensedNearestNeighbour(), SMOTE()],
-    "normalizer": [None, StandardScaler(), PowerTransformer(), MinMaxScaler(), RobustScaler()],
-    "features": [None, PCA(), SelectKBest(), FeatureUnion([("pca", PCA()), ("selectkbest", SelectKBest())])]
-}
-
-DOMAIN_SPACE = generate_domain_space(PROTOTYPE)
 
 def get_baseline():
     baseline = {}
-    for k in PROTOTYPE.keys():
+    for k in PrototypeSingleton.getInstance().getPrototype().keys():
         baseline[k] = ('{}_NoneType'.format(k), {})
     return baseline
 
@@ -28,9 +28,8 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
         if args == {}:
             args = get_baseline()
         op_to_class = {'pca': PCA, 'selectkbest': SelectKBest}
-        parts = ['rebalance', 'normalizer', 'features']
         operators = []
-        for part in parts:
+        for part in PrototypeSingleton.getInstance().getParts():
             item = args[part]
             if 'NoneType' in item[0]:
                 continue
@@ -43,7 +42,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                         pa = p.split('__')[1]
                         if op not in fparams:
                             fparams[op] = {}
-                        fparams[op][pa] = v 
+                        fparams[op][pa] = v
                     oparams = []
                     for p,v in fparams.items():
                         oparams.append((p, op_to_class[p](**v)))

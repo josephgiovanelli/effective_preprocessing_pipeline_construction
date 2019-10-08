@@ -1,5 +1,4 @@
 from experiment.policies.policy import Policy
-from experiment.pipeline.prototype import DOMAIN_SPACE as PIPELINE_SPACE
 from experiment.algorithm import space as ALGORITHM_SPACE
 from experiment.objective import objective_joint
 
@@ -17,7 +16,7 @@ class Joint(Policy):
         trials = Trials()
         algorithm = self.config['algorithm']
         space = {
-            'pipeline': PIPELINE_SPACE,
+            'pipeline': self.PIPELINE_SPACE,
             'algorithm': ALGORITHM_SPACE.get_domain_space(algorithm),
         }
         obj_pl = functools.partial(objective_joint,

@@ -1,5 +1,5 @@
+from experiment.pipeline.PrototypeSingleton import PrototypeSingleton
 from experiment.policies.policy import Policy
-from experiment.pipeline.prototype import DOMAIN_SPACE as PIPELINE_SPACE
 from experiment.algorithm import space as ALGORITHM_SPACE
 from experiment.objective import objective_pipeline, objective_algo
 
@@ -27,7 +27,7 @@ class Split(Policy):
                     config=self.config)
             fmin(
                 fn=obj_pl, 
-                space=PIPELINE_SPACE, 
+                space=self.PIPELINE_SPACE,
                 algo=tpe.suggest, 
                 max_evals=None,
                 max_time=self.config['step_pipeline'],     

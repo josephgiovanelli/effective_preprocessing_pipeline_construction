@@ -1,9 +1,11 @@
 from experiment.objective import get_baseline_score
+from experiment.pipeline.PrototypeSingleton import PrototypeSingleton
 
 import json
 
 class Policy(object):
     def __init__(self, config):
+        self.PIPELINE_SPACE = PrototypeSingleton.getInstance().getDomainSpace()
         self.compute_baseline = True
         self.config = config
         self.context = {
