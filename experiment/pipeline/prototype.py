@@ -8,7 +8,7 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler, PowerTransformer
 
-from utils import generate_domain_space
+from .utils import generate_domain_space
 
 PROTOTYPE = {
     "rebalance": [None, NearMiss(), CondensedNearestNeighbour(), SMOTE()],
@@ -35,17 +35,17 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
             if 'NoneType' in item[0]:
                 continue
             else:
-                params =  {k.split('__', 1)[-1]:v for k,v in item[1].iteritems()}
+                params =  {k.split('__', 1)[-1]:v for k,v in item[1].items()}
                 if item[0] == 'features_FeatureUnion':
                     fparams = {'pca':{}, 'selectkbest':{}}
-                    for p,v in params.iteritems():
+                    for p,v in params.items():
                         op = p.split('__')[0]
                         pa = p.split('__')[1]
                         if op not in fparams:
                             fparams[op] = {}
                         fparams[op][pa] = v 
                     oparams = []
-                    for p,v in fparams.iteritems():
+                    for p,v in fparams.items():
                         oparams.append((p, op_to_class[p](**v)))
                     operator = FeatureUnion(oparams)
                     operators.append((part, operator))

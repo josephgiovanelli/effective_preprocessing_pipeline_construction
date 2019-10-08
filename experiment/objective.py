@@ -13,12 +13,12 @@ from experiment.pipeline.prototype import DOMAIN_SPACE, pipeline_conf_to_full_pi
 
 
 def objective(pipeline_config, algo_config, algorithm, X, y, context, config, step):
-    pipeline_hash = hashlib.sha1(json.dumps(pipeline_config, sort_keys=True)).hexdigest()
-    algorithm_hash = hashlib.sha1(json.dumps(algo_config, sort_keys=True)).hexdigest()
+    pipeline_hash = hashlib.sha1(json.dumps(pipeline_config, sort_keys=True).encode()).hexdigest()
+    algorithm_hash = hashlib.sha1(json.dumps(algo_config, sort_keys=True).encode()).hexdigest()
     item_hash = {
         'pipeline': pipeline_hash,
         'algorithm': algorithm_hash,
-        'config': hashlib.sha1(pipeline_hash + algorithm_hash).hexdigest()
+        'config': hashlib.sha1(str(pipeline_hash + algorithm_hash).encode()).hexdigest()
     }
 
     item = {

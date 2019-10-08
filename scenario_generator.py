@@ -42,12 +42,12 @@ def __write_scenario(path, scenario):
     try:
         print('   -> {}'.format(path))
         with open(path, 'w') as f:
-            for k,v in scenario.iteritems():
+            for k,v in scenario.items():
                 if isinstance(v, str):
                     f.write('{}: {}\n'.format(k, v))
                 else:
                     f.write('{}:\n'.format(k))
-                    for i,j in v.iteritems():
+                    for i,j in v.items():
                         f.write('  {}: {}\n'.format(i,j))
     except Exception as e:
         print(e)

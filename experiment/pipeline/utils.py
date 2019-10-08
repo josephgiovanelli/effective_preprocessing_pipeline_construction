@@ -11,7 +11,7 @@ def expand_params(operation, operator):
     try:
         params = globals()['params_{}'.format(type(operator).__name__)]()
         expanded_params = {}
-        for param_name, param_val in params.iteritems():
+        for param_name, param_val in params.items():
             expanded_params['{}__{}'.format(operation, param_name)] = param_val
         return expanded_params
     except Exception as e:
@@ -20,11 +20,11 @@ def expand_params(operation, operator):
 
 def generate_grid(prototype):
     final_grid = []
-    elements = [zip([k] * len(o), o) for k,o in prototype.iteritems()]
+    elements = [zip([k] * len(o), o) for k,o in prototype.items()]
     for element in itertools.product(*elements):
         config = dict(element)
         params = {}
-        for operation, operator in config.iteritems():
+        for operation, operator in config.items():
             config[operation] = [operator] # Trick since ScikitLearn requires list
             if operator is not None:
                 params.update(expand_params(operation, operator))
@@ -35,7 +35,7 @@ def generate_grid(prototype):
 
 def pretty_config(conf):
     print_conf = {}
-    for k,v in conf.iteritems():
+    for k,v in conf.items():
         if '__' in k:
             print_conf[k] = v
         elif v == 'NoneType':
@@ -56,13 +56,13 @@ def pretty_print_grid(grid):
 
 def generate_domain_space(prototype):
     domain_space = {}
-    for operation, operators in prototype.iteritems():
+    for operation, operators in prototype.items():
         operators_space = []
         for operator in operators:
             label = '{}_{}'.format(operation, type(operator).__name__ if operator is not None else 'NoneType')
             params = expand_params(operation, operator)
             operator_config = {}
-            for k, v in params.iteritems():
+            for k, v in params.items():
                 operator_config[k] = hp.choice('{}_{}'.format(label, k), v)
             operators_space.append((label, operator_config))
         domain_space[operation] = hp.choice(operation, operators_space)
