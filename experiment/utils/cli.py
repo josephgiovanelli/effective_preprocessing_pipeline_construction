@@ -15,6 +15,12 @@ Automated Machine Learning Workflow creation and configuration
     parser.add_argument("-s", "--scenario", nargs="?", type=str, required=True,
                         help="path to the scenario to execute")
 
+    parser.add_argument("-p", "--pipeline", nargs="+", type=str, required=True,
+                        help="step of the pipeline to execute")
+
+    parser.add_argument("-r", "--result_path", nargs="?", type=str, required=True,
+                        help="path where put the results")
+
     parser.add_argument("-v", "--verbosity", action="count", help="increase output verbosity", default=0)
 
     parser.add_argument('-c','--customize', nargs='+', help='Customize scenario by overwriting specific variables', required=False)

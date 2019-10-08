@@ -1,4 +1,6 @@
 import os
+from functools import reduce
+
 import yaml
 from six import iteritems
 import time
@@ -8,8 +10,15 @@ import datetime
 from prettytable import PrettyTable
 from tqdm import tqdm
 
-SCENARIO_PATH = './scenarios'
-RESULT_PATH = './results'
+import argparse
+
+parser = argparse.ArgumentParser(description="Automated Machine Learning Workflow creation and configuration")
+parser.add_argument("-p", "--pipeline", nargs="+", type=str, required=True, help="step of the pipeline to execute")
+parser.add_argument("-r", "--result_path", nargs="?", type=str, required=True, help="path where put the results")
+args = parser.parse_args()
+
+SCENARIO_PATH = './scenarios/'
+RESULT_PATH = args.result_path
 GLOBAL_SEED = 42
 
 def yes_or_no(question):
@@ -95,14 +104,19 @@ answer = yes_or_no("The total runtime is {}. Are you sure you want to run all sc
     datetime.timedelta(seconds=total_runtime))  )
 print
 
+
 if answer:
-    with tqdm(total=total_runtime) as pbar:  
+    with tqdm(total=total_runtime) as pbar:
         for info in to_run.values():
             base_scenario = info['path'].split('.yaml')[0]
+            output = base_scenario.split('_')[0]
             pbar.set_description("Running scenario {}\n\r".format(info['path']))
-            cmd = 'python ./main.py -s {} -c control.seed={}'.format(
-                os.path.join(SCENARIO_PATH, info['path']), 
-                GLOBAL_SEED)
+            cmd = 'python ./main.py -s {} -c control.seed={} -p {} -r {}'.format(
+                os.path.join(SCENARIO_PATH, info['path']),
+                GLOBAL_SEED,
+                reduce(lambda x, y: x + " " + y, args.pipeline),
+                RESULT_PATH)
+            print(cmd)
             with open(os.path.join(RESULT_PATH, '{}_stdout.txt'.format(base_scenario)), "a") as log_out:
                 with open(os.path.join(RESULT_PATH, '{}_stderr.txt'.format(base_scenario)), "a") as log_err:
                     subprocess.call(cmd, shell=True, stdout=log_out, stderr=log_err)
