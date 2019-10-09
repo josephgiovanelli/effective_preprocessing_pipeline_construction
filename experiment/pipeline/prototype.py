@@ -80,5 +80,6 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                     operator = globals()[item[0].split('_',1)[-1]](**params)
                     operators.append((part, operator))
 
+        PrototypeSingleton.getInstance().resetFeatures()
         clf = algorithm(random_state=seed, **algo_config)
         return Pipeline(operators + [("classifier", clf)]), operators
