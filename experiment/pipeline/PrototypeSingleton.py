@@ -17,7 +17,8 @@ class PrototypeSingleton:
 
    POOL = {
        "imputate": [None, SimpleImputer(), IterativeImputer()],
-       "encode": [OneHotEncoder(), OrdinalEncoder()],
+       "encode": [None, OneHotEncoder()],
+       #"encode": [OneHotEncoder(), OrdinalEncoder()],
        "rebalance": [None, NearMiss(), SMOTE()],
        #"rebalance": [None, NearMiss(), CondensedNearestNeighbour(), SMOTE()],
        "normalizer": [None, StandardScaler(), PowerTransformer(), MinMaxScaler(), RobustScaler()],
@@ -30,8 +31,10 @@ class PrototypeSingleton:
    parts = []
    X = []
    y = []
-   numerical_features = []
-   categorical_features = []
+   original_numerical_features = []
+   original_categorical_features = []
+   current_numerical_features = []
+   current_categorical_features = []
 
 
    @staticmethod
@@ -60,15 +63,23 @@ class PrototypeSingleton:
    def setDataset(self, X, y):
        self.X = pd.DataFrame(X)
        self.y = pd.DataFrame(y)
-       self.numerical_features = self.X.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
-       self.categorical_features = self.X.select_dtypes(include=['object']).columns
+
+   def setFeatures(self, num_features, cat_features):
+       self.original_numerical_features = num_features
+       self.current_numerical_features = num_features
+       self.original_categorical_features = cat_features
+       self.current_categorical_features = cat_features
+
+   def resetFeatures(self):
+       self.current_numerical_features = self.original_numerical_features
+       self.current_categorical_features = self.original_categorical_features
 
    def discretizeFeatures(self):
-       self.numerical_features = []
-       self.categorical_features = self.X.columns
+       self.current_numerical_features = []
+       self.current_categorical_features = list(self.X.columns)
 
    def getFeatures(self):
-       return self.numerical_features, self.categorical_features
+       return self.current_numerical_features, self.current_categorical_features
 
    def getDomainSpace(self):
        return self.DOMAIN_SPACE

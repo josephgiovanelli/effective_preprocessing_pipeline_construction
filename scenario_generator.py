@@ -61,13 +61,13 @@ def __write_scenario(path, scenario):
 
 
 
-for task_id in benchmark_suite.tasks:  # iterate over all tasks
-    print('# DATASET: {}'.format(task_id))
+for id in benchmark_suite.data:  # iterate over all tasks
+    print('# DATASET: {}'.format(id))
     for algorithm in algorithms:
         print('## ALGORITHM: {}'.format(algorithm))
         for policy in policies:
             scenario = copy.deepcopy(base)
-            scenario['setup']['dataset'] = task_id
+            scenario['setup']['dataset'] = id
             scenario['setup']['algorithm'] = algorithm
             scenario['setup']['policy'] = policy
             scenario['policy'] = copy.deepcopy(policies_config[policy])
@@ -75,7 +75,7 @@ for task_id in benchmark_suite.tasks:  # iterate over all tasks
             b = ''.join([c for c in algorithm if c.isupper()]).lower()
             scenario['title'] = '{} on dataset n {} with {} policy'.format(
                 a,
-                task_id,
+                id,
                 policy.title()
             )
             '''
@@ -94,6 +94,6 @@ for task_id in benchmark_suite.tasks:  # iterate over all tasks
             runtime = scenario['setup']['runtime']
             step = policies_config['split']['step_pipeline']
             scenario['policy']['step_pipeline'] = runtime
-            path = os.path.join(SCENARIO_PATH, '{}_{}.yaml'.format(b, task_id))
+            path = os.path.join(SCENARIO_PATH, '{}_{}.yaml'.format(b, id))
             __write_scenario(path, scenario)
 
