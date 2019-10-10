@@ -24,7 +24,7 @@ args = parser.parse_args()
 input_paths = [args.first_input, args.second_input]
 result_path = args.output
 
-algorithms = ['RandomForest', 'DecisionTree', 'SVM', 'NeuralNet']
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors', 'SVM', 'NeuralNet']
 
 comparison = {}
 

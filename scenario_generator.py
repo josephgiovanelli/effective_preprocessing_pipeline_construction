@@ -10,7 +10,7 @@ SCENARIO_PATH = './scenarios/'
 
 benchmark_suite = openml.study.get_suite('OpenML-CC18') # obtain the benchmark suite
 
-algorithms = ['RandomForest', 'DecisionTree', 'SVM', 'NeuralNet']
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors', 'SVM', 'NeuralNet']
 #policies = ['iterative', 'split', 'adaptive', 'joint']
 policies = ['split']
 

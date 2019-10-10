@@ -1,3 +1,5 @@
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
@@ -9,6 +11,8 @@ algorithms = {
     'RandomForest': RandomForestClassifier,
     'SVM': SVC,
     'DecisionTree': DecisionTreeClassifier,
+    'NaiveBayes': GaussianNB,
+    'KNearestNeighbors': KNeighborsClassifier,
     'NeuralNet': MLPClassifier
 }
 
@@ -49,6 +53,19 @@ grid_decision_tree = {
 }
 
 # 1944
+grid_naive_bayes = {
+    "priors": [None],
+    "var_smoothing": [1e-09],
+}
+
+# 1944
+grid_knn = {
+    "n_neighbors": [3, 5, 7, 9, 11, 13, 15, 17, 19],
+    "weights": ['uniform', 'distance'],
+    "metric": ['minkowski', 'euclidean', 'manhattan'],
+}
+
+# 1944
 grid_neural_network = {
     "hidden_layer_sizes": [(10,), (100,), (50,), 
     (10,) * 2, (100,) * 2, (50,) * 2,
@@ -67,6 +84,8 @@ parameter_grid = {
     'RandomForest': grid_random_forest,
     'SVM': grid_svm,
     'DecisionTree': grid_decision_tree,
+    'NaiveBayes': grid_naive_bayes,
+    'KNearestNeighbors': grid_knn,
     'NeuralNet': grid_neural_network
 }
 

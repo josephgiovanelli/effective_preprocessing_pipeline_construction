@@ -81,5 +81,8 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                     operators.append((part, operator))
 
         PrototypeSingleton.getInstance().resetFeatures()
-        clf = algorithm(random_state=seed, **algo_config)
+        if 'random_state' in algorithm().get_params():
+            clf = algorithm(random_state=seed, **algo_config)
+        else:
+            clf = algorithm(**algo_config)
         return Pipeline(operators + [("classifier", clf)]), operators
