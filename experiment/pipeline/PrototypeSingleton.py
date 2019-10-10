@@ -60,10 +60,6 @@ class PrototypeSingleton:
 
        self.DOMAIN_SPACE = generate_domain_space(self.PROTOTYPE)
 
-   def setDataset(self, X, y):
-       self.X = pd.DataFrame(X)
-       self.y = pd.DataFrame(y)
-
    def setFeatures(self, num_features, cat_features):
        self.original_numerical_features = num_features
        self.current_numerical_features = num_features

@@ -11,7 +11,7 @@ class Iterative(Policy):
 
     def run(self, X, y):
         super(Iterative, self).run(X, y)
-        ranges = [i for i in xrange(0, self.config['time'] / 
+        ranges = [i for i in range(0, self.config['time'] /
             (self.config['step_pipeline']+self.config['step_algorithm']))]
         current_pipeline_configuration = {}
         current_algo_configuration = {}
