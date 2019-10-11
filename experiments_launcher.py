@@ -114,5 +114,5 @@ with tqdm(total=total_runtime) as pbar:
             RESULT_PATH)
         with open(os.path.join(RESULT_PATH, '{}_stdout.txt'.format(base_scenario)), "a") as log_out:
             with open(os.path.join(RESULT_PATH, '{}_stderr.txt'.format(base_scenario)), "a") as log_err:
-                subprocess.call(cmd, shell=True, stdout=log_out, stderr=log_err)
+                subprocess.call(cmd, shell=True, stdout=log_out, stderr=log_err, timeout=210)
         pbar.update(info['runtime'])
