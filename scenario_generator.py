@@ -4,14 +4,13 @@ import re
 from collections import OrderedDict
 
 import openml
-
+import pandas as pd
 
 SCENARIO_PATH = './scenarios/'
 
-benchmark_suite = openml.study.get_suite('OpenML-CC18') # obtain the benchmark suite
+#benchmark_suite = openml.study.get_suite('OpenML-CC18') # obtain the benchmark suite
 
 algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors', 'SVM', 'NeuralNet']
-#policies = ['iterative', 'split', 'adaptive', 'joint']
 policies = ['split']
 
 policies_config = {
@@ -59,9 +58,21 @@ def __write_scenario(path, scenario):
     except Exception as e:
         print(e)
 
+def get_filtered_datasets():
+    benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307,
+                       300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501,
+                       1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
+                       40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
+                       40670, 40701]
+    df = pd.read_csv("openml/meta-features.csv")
+    df = df.loc[df['did'].isin(benchmark_suite)]
+    df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
+    df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
+    df = df.loc[df['NumberOfInstances'] * df['NumberOfFeatures'] < 5000000]
+    df = df['did']
+    return df.values.flatten().tolist()
 
-
-for id in benchmark_suite.data:  # iterate over all tasks
+for id in get_filtered_datasets():
     print('# DATASET: {}'.format(id))
     for algorithm in algorithms:
         print('## ALGORITHM: {}'.format(algorithm))
