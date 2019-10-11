@@ -99,6 +99,8 @@ print(t_to_run)
 print('TOTAL RUNTIME: {} ({}s)'.format(datetime.timedelta(seconds=total_runtime), total_runtime))
 print
 
+print("The total runtime is {}.".format(datetime.timedelta(seconds=total_runtime)))
+print
 
 with tqdm(total=total_runtime) as pbar:
     for info in to_run.values():
@@ -110,7 +112,6 @@ with tqdm(total=total_runtime) as pbar:
             GLOBAL_SEED,
             reduce(lambda x, y: x + " " + y, args.pipeline),
             RESULT_PATH)
-        print(cmd)
         with open(os.path.join(RESULT_PATH, '{}_stdout.txt'.format(base_scenario)), "a") as log_out:
             with open(os.path.join(RESULT_PATH, '{}_stderr.txt'.format(base_scenario)), "a") as log_err:
                 subprocess.call(cmd, shell=True, stdout=log_out, stderr=log_err)
