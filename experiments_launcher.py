@@ -1,4 +1,5 @@
 import os
+import signal
 from functools import reduce
 
 import yaml
@@ -41,10 +42,10 @@ for scenario in scenario_list:
         scenarios[scenario] = {'results': None, 'path': scenario}
     for result in result_list:
         base_result = result.split('.json')[0]
-        if base_result.startswith(base_scenario + '_'):
+        if base_result.startswith(base_scenario):
             scenarios[scenario]['results'] = result
-            date = base_result.split(base_scenario + '_')[-1].replace('_', ' ')
-            scenarios[scenario]['results_date'] = date
+            #date = base_result.split(base_scenario + '_')[-1].replace('_', ' ')
+            #scenarios[scenario]['results_date'] = date
 
 # Calculate total amount of time
 total_runtime = 0
@@ -74,11 +75,11 @@ for v in invalid_scenarios.values():
     t_invalid.add_row([v['path'], v['status']])
 
 scenario_with_results = {k:v for k,v in iteritems(scenarios) if v['status'] == 'Ok' and v['results'] is not None}
-t_with_results = PrettyTable(['PATH', 'RUNTIME',  'STATUS', 'COMPLETION', 'RESULTS'])
+t_with_results = PrettyTable(['PATH', 'RUNTIME',  'STATUS', 'RESULTS'])
 t_with_results.align["PATH"] = "l"
 t_with_results.align["RESULTS"] = "l"
 for v in scenario_with_results.values():
-    t_with_results.add_row([v['path'], str(v['runtime']) + 's', v['status'], v['results_date'], v['results']])
+    t_with_results.add_row([v['path'], str(v['runtime']) + 's', v['status'], v['results']])
 
 to_run = {k:v for k,v in iteritems(scenarios) if v['status'] == 'Ok' and v['results'] is None}
 t_to_run = PrettyTable(['PATH', 'RUNTIME', 'STATUS'])
@@ -102,6 +103,15 @@ print
 print("The total runtime is {}.".format(datetime.timedelta(seconds=total_runtime)))
 print
 
+import psutil
+
+
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
+
 with tqdm(total=total_runtime) as pbar:
     for info in to_run.values():
         base_scenario = info['path'].split('.yaml')[0]
@@ -114,5 +124,11 @@ with tqdm(total=total_runtime) as pbar:
             RESULT_PATH)
         with open(os.path.join(RESULT_PATH, '{}_stdout.txt'.format(base_scenario)), "a") as log_out:
             with open(os.path.join(RESULT_PATH, '{}_stderr.txt'.format(base_scenario)), "a") as log_err:
-                subprocess.call(cmd, shell=True, stdout=log_out, stderr=log_err, timeout=210)
+                try:
+                    process = subprocess.Popen(cmd, shell=True, stdout=log_out, stderr=log_err)
+                    process.wait(timeout=210)
+                except:
+                    kill(process.pid)
+                    print("___________________________________________________"+ RESULT_PATH + " does not finish in 210s" )
+
         pbar.update(info['runtime'])
