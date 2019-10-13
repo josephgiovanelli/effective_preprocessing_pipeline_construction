@@ -41,8 +41,8 @@ for path in input_paths:
             pipeline = str(data['context']['best_config']['pipeline']).replace(",", " ")
             num_iterations = data['context']['iteration']
             best_iteration = data['context']['best_config']['iteration']
-            start_time_best_iteration = data['context']['best_config']['start_time']/1000000
-            stop_time_best_iteration = data['context']['best_config']['stop_time']/1000000
+            start_time_best_iteration = data['context']['best_config']['start_time']
+            stop_time_best_iteration = data['context']['best_config']['stop_time']
             comparison[path][result[:-5]] = (accuracy, pipeline, num_iterations, best_iteration, start_time_best_iteration, stop_time_best_iteration)
 
 results = collections.OrderedDict(sorted(mergeDict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
@@ -56,8 +56,11 @@ for algorithm in algorithms:
                   "stop_time_best_iteration1,conf2,pipeline2,num_iterations2,best_iteration2,"
                   "start_time_best_iteration2,stop_time_best_iteration2\n")
 
+pairs = []
+
 for key, value in results.items():
     if len(value) == 2:
+        pairs += [value]
         acronym = key.split("_")[0]
         dataset = key.split("_")[1]
         conf1 = value[0][0]
@@ -70,10 +73,10 @@ for key, value in results.items():
                       str(value[0][3]) + "," + str(value[0][4]) + "," + str(value[0][5]) + "," + str(conf2) + "," +
                       str(value[1][1]) + "," + str(value[1][2]) + "," + str(value[1][3]) + "," + str(value[1][4]) +
                       "," + str(value[1][5]) + "\n")
-
-complete_results = {'conf1': sum(value[0][0] - value[1][0] >= 0.001 for value in results.values()),
-                 'draws': sum((value[0][0] - value[1][0] <= 0.001) and (value[1][0] - value[0][0] <= 0.001) for value in results.values()),
-                 'conf2': sum(value[1][0] - value[0][0] >= 0.001 for value in results.values())}
+print(pairs)
+complete_results = {'conf1': sum(value[0][0] - value[1][0] >= 0.001 for value in pairs),
+                 'draws': sum((value[0][0] - value[1][0] <= 0.001) and (value[1][0] - value[0][0] <= 0.001) for value in pairs),
+                 'conf2': sum(value[1][0] - value[0][0] >= 0.001 for value in pairs)}
 
 with open(os.path.join(result_path, 'results.csv'), "a") as out:
     out.write("algorithm,conf1,draws,conf2\n")
