@@ -73,7 +73,7 @@ for key, value in results.items():
                       str(value[0][3]) + "," + str(value[0][4]) + "," + str(value[0][5]) + "," + str(conf2) + "," +
                       str(value[1][1]) + "," + str(value[1][2]) + "," + str(value[1][3]) + "," + str(value[1][4]) +
                       "," + str(value[1][5]) + "\n")
-print(pairs)
+
 complete_results = {'conf1': sum(value[0][0] - value[1][0] >= 0.001 for value in pairs),
                  'draws': sum((value[0][0] - value[1][0] <= 0.001) and (value[1][0] - value[0][0] <= 0.001) for value in pairs),
                  'conf2': sum(value[1][0] - value[0][0] >= 0.001 for value in pairs)}
