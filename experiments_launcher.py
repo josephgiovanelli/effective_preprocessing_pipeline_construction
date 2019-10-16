@@ -42,7 +42,9 @@ for scenario in scenario_list:
         scenarios[scenario] = {'results': None, 'path': scenario}
     for result in result_list:
         base_result = result.split('.json')[0]
-        if base_result.startswith(base_scenario):
+        print(base_scenario)
+        print(base_result)
+        if base_result.__eq__(base_scenario):
             scenarios[scenario]['results'] = result
             #date = base_result.split(base_scenario + '_')[-1].replace('_', ' ')
             #scenarios[scenario]['results_date'] = date
@@ -117,7 +119,7 @@ with tqdm(total=total_runtime) as pbar:
         base_scenario = info['path'].split('.yaml')[0]
         output = base_scenario.split('_')[0]
         pbar.set_description("Running scenario {}\n\r".format(info['path']))
-        cmd = 'python ./main.py -s {} -c control.seed={} -p {} -r {}'.format(
+        cmd = 'python3.7 ./main.py -s {} -c control.seed={} -p {} -r {}'.format(
             os.path.join(SCENARIO_PATH, info['path']),
             GLOBAL_SEED,
             reduce(lambda x, y: x + " " + y, args.pipeline),
