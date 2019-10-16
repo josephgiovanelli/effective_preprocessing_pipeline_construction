@@ -7,6 +7,10 @@ from os import listdir
 from os.path import isfile, join
 import json
 
+import openml
+import pandas as pd
+
+
 def mergeDict(dict1, dict2):
     """ Merge dictionaries and keep values of common keys in list"""
     dict3 = {**dict2, **dict1}
@@ -29,21 +33,50 @@ algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors', 'SVM', 'NeuralN
 
 comparison = {}
 
+benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307,
+                       300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501,
+                       1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
+                       40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
+                       40670, 40701]
+
+def get_filtered_datasets():
+    benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307,
+                       300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501,
+                       1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
+                       40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
+                       40670, 40701]
+    df = pd.read_csv("openml/meta-features.csv")
+    df = df.loc[df['did'].isin(benchmark_suite)]
+    df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
+    df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
+    df = df.loc[df['NumberOfInstances'] * df['NumberOfFeatures'] < 5000000]
+    df = df['did']
+    return df.values.flatten().tolist()
+
 for path in input_paths:
     files = [f for f in listdir(path) if isfile(join(path, f))]
-    results = [f for f in files if f[-4:] == 'json']
-
+    results = [f[:-5] for f in files if f[-4:] == 'json']
     comparison[path] = {}
-    for result in results:
-        with open(os.path.join(path, result)) as json_file:
-            data = json.load(json_file)
-            accuracy = data['context']['max_history_score']
-            pipeline = str(data['context']['best_config']['pipeline']).replace(",", " ")
-            num_iterations = data['context']['iteration']
-            best_iteration = data['context']['best_config']['iteration']
-            start_time_best_iteration = data['context']['best_config']['start_time']
-            stop_time_best_iteration = data['context']['best_config']['stop_time']
-            comparison[path][result[:-5]] = (accuracy, pipeline, num_iterations, best_iteration, start_time_best_iteration, stop_time_best_iteration)
+    for algorithm in algorithms:
+        for dataset in get_filtered_datasets():
+            acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+            acronym += '_' + str(dataset)
+            if acronym in results:
+                with open(os.path.join(path, acronym + '.json')) as json_file:
+                    data = json.load(json_file)
+                    accuracy = data['context']['best_config']['score'] * 100
+                    pipeline = str(data['context']['best_config']['pipeline']).replace(",", " ")
+                    num_iterations = data['context']['iteration']
+                    best_iteration = data['context']['best_config']['iteration']
+                    comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration)
+            else:
+                accuracy = 0
+                pipeline = ""
+                num_iterations = 0
+                best_iteration = 0
+                start_time_best_iteration = 0
+                stop_time_best_iteration = 0
+                comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration)
 
 results = collections.OrderedDict(sorted(mergeDict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
 partial_results = {}
@@ -52,27 +85,28 @@ for algorithm in algorithms:
     acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
     partial_results[acronym] = {'conf1': 0, 'draws': 0, 'conf2': 0}
     with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
-        out.write("dataset,conf1,pipeline1,num_iterations1,best_iteration1,start_time_best_iteration1,"
-                  "stop_time_best_iteration1,conf2,pipeline2,num_iterations2,best_iteration2,"
-                  "start_time_best_iteration2,stop_time_best_iteration2\n")
+        out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
+                  "num_iterations2,best_iteration2\n")
 
 pairs = []
-
+df = pd.read_csv("openml/meta-features.csv")
+df = df.loc[df['did'].isin(get_filtered_datasets())]
 for key, value in results.items():
     if len(value) == 2:
         pairs += [value]
         acronym = key.split("_")[0]
         dataset = key.split("_")[1]
+        name = df.loc[df['did'] == int(dataset)]['name'].values.tolist()[0]
+        dimensions = ' x '.join([str(int(a)) for a in df.loc[df['did'] == int(dataset)][['NumberOfInstances', 'NumberOfFeatures']].values.flatten().tolist()])
         conf1 = value[0][0]
         conf2 = value[1][0]
         partial_results[acronym]['conf1'] += 1 if conf1 - conf2 >= 0.001 else 0
         partial_results[acronym]['draws'] += 1 if (conf1 - conf2 <= 0.001) and (conf2 - conf1 <= 0.001) else 0
         partial_results[acronym]['conf2'] += 1 if conf2 - conf1 >= 0.001 else 0
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
-            out.write(dataset + "," + str(conf1) + "," + str(value[0][1]) + "," + str(value[0][2]) + "," +
-                      str(value[0][3]) + "," + str(value[0][4]) + "," + str(value[0][5]) + "," + str(conf2) + "," +
-                      str(value[1][1]) + "," + str(value[1][2]) + "," + str(value[1][3]) + "," + str(value[1][4]) +
-                      "," + str(value[1][5]) + "\n")
+            out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
+                      str(value[0][2]) + "," + str(value[0][3]) + "," + "," + str(conf2) + "," + str(value[1][1]) +
+                      "," + str(value[1][2]) +  "," + str(value[1][3]) + "\n")
 
 complete_results = {'conf1': sum(value[0][0] - value[1][0] >= 0.001 for value in pairs),
                  'draws': sum((value[0][0] - value[1][0] <= 0.001) and (value[1][0] - value[0][0] <= 0.001) for value in pairs),
