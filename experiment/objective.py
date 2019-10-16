@@ -43,15 +43,14 @@ def objective(pipeline_config, algo_config, algorithm, X, y, context, config, st
         scores = cross_validate(pipeline, 
                 X,
                 y,
-                # scoring = ["precision_macro", "recall_macro", "f1_macro", "roc_auc", "accuracy", "balanced_accuracy"],
                 scoring = ["balanced_accuracy"],
                 cv=10,
                 n_jobs=-1,
                 return_estimator=False,
                 return_train_score=False,
                 verbose=0)
-        score = np.mean(scores['test_balanced_accuracy']) // 0.01 / 100
-        std = np.std(scores['test_balanced_accuracy']) // 0.01 / 100
+        score = np.mean(scores['test_balanced_accuracy']) // 0.0001 / 10000
+        std = np.std(scores['test_balanced_accuracy']) // 0.0001 / 10000
         status = STATUS_OK
     except Exception as e:
         score = 0.
@@ -69,18 +68,6 @@ def objective(pipeline_config, algo_config, algorithm, X, y, context, config, st
         'status': status, 
         'score': score,
         'score_std': std,
-        # 'precision_macro': np.mean(scores['test_precision_macro']) // 0.01 / 100,
-        # 'precision_macro_std': np.std(scores['test_precision_macro']) // 0.01 / 100,
-        # 'recall_macro': np.mean(scores['test_recall_macro']) // 0.01 / 100,
-        # 'recall_macro_std': np.std(scores['test_recall_macro']) // 0.01 / 100,
-        # 'f1_macro': np.mean(scores['test_f1_macro']) // 0.01 / 100,
-        # 'f1_macro_std': np.std(scores['test_f1_macro']) // 0.01 / 100,
-        # 'roc_auc': np.mean(scores['test_roc_auc']) // 0.01 / 100,
-        # 'roc_auc_std': np.std(scores['test_roc_auc']) // 0.01 / 100,
-        # 'accuracy': np.mean(scores['test_accuracy']) // 0.01 / 100,
-        # 'accuracy_std': np.std(scores['test_accuracy']) // 0.01 / 100,
-        # 'balanced_accuracy': np.mean(scores['test_balanced_accuracy']) // 0.01 / 100,
-        # 'balanced_accuracy_std': np.std(scores['test_balanced_accuracy']) // 0.01 / 100,
         'iteration': iteration_number,
         'config_hash': item_hash,
         'max_history_score': context['max_history_score'],
@@ -144,20 +131,8 @@ def get_baseline_score(algorithm, X, y, seed):
                     return_estimator=False,
                     return_train_score=False,
                     verbose=0)
-    score = np.mean(scores['test_balanced_accuracy'])
-    std = np.std(scores['test_balanced_accuracy'])
-    # return score, std, np.mean(scores['test_precision_macro']) // 0.01 / 100,\
-    #        np.std(scores['test_precision_macro']) // 0.01 / 100,\
-    #        np.mean(scores['test_recall_macro']) // 0.01 / 100,\
-    #        np.std(scores['test_recall_macro']) // 0.01 / 100,\
-    #        np.mean(scores['test_f1_macro']) // 0.01 / 100,\
-    #        np.std(scores['test_f1_macro']) // 0.01 / 100,\
-    #        np.mean(scores['test_roc_auc']) // 0.01 / 100,\
-    #        np.std(scores['test_roc_auc']) // 0.01 / 100,\
-    #        np.mean(scores['test_accuracy']) // 0.01 / 100,\
-    #        np.std(scores['test_accuracy']) // 0.01 / 100,\
-    #        np.mean(scores['test_balanced_accuracy']) // 0.01 / 100,\
-    #        np.std(scores['test_balanced_accuracy']) // 0.01 / 100
+    score = np.mean(scores['test_balanced_accuracy']) // 0.0001 / 10000
+    std = np.std(scores['test_balanced_accuracy']) // 0.0001 / 10000
     return score, std
 
 

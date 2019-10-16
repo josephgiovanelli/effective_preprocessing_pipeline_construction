@@ -20,14 +20,6 @@ class Policy(object):
         }
 
     def __compute_baseline(self, X, y):
-        # baseline_score, baseline_score_std, baseline_precision_macro, baseline_precision_macro_std, \
-        # baseline_recall_macro, baseline_recall_macro_std, baseline_f1_macro, baseline_f1_macro_std, \
-        # baseline_roc_auc, baseline_roc_auc_std, baseline_accuracy, baseline_accuracy_std, baseline_balanced_accuracy, \
-        # baseline_balanced_accuracy_std = get_baseline_score(
-        #     self.config['algorithm'],
-        #     X, 
-        #     y,
-        #     self.config['seed'])
         baseline_score, baseline_score_std = get_baseline_score(
             self.config['algorithm'],
             X,
@@ -35,18 +27,6 @@ class Policy(object):
             self.config['seed'])
         self.context['baseline_score'] = baseline_score
         self.context['baseline_score_std'] = baseline_score_std
-        # self.context['baseline_precision_macro'] = baseline_precision_macro
-        # self.context['baseline_precision_macro_std'] = baseline_precision_macro_std
-        # self.context['baseline_recall_macro'] = baseline_recall_macro
-        # self.context['baseline_recall_macro_std'] = baseline_recall_macro_std
-        # self.context['baseline_f1_macro'] = baseline_f1_macro
-        # self.context['baseline_f1_macro_std'] = baseline_f1_macro_std
-        # self.context['baseline_roc_auc'] = baseline_roc_auc
-        # self.context['baseline_roc_auc_std'] = baseline_roc_auc_std
-        # self.context['baseline_accuracy'] = baseline_accuracy
-        # self.context['baseline_accuracy_std'] = baseline_accuracy_std
-        # self.context['baseline_balanced_accuracy'] = baseline_balanced_accuracy
-        # self.context['baseline_balanced_accuracy_std'] = baseline_balanced_accuracy_std
 
     def run(self, X, y):
         if self.compute_baseline:
