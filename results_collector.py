@@ -53,18 +53,19 @@ def get_filtered_datasets():
     df = df['did']
     return df.values.flatten().tolist()
 
+filtered_datasets = get_filtered_datasets()
 for path in input_paths:
     files = [f for f in listdir(path) if isfile(join(path, f))]
     results = [f[:-5] for f in files if f[-4:] == 'json']
     comparison[path] = {}
     for algorithm in algorithms:
-        for dataset in get_filtered_datasets():
+        for dataset in filtered_datasets:
             acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
             acronym += '_' + str(dataset)
             if acronym in results:
                 with open(os.path.join(path, acronym + '.json')) as json_file:
                     data = json.load(json_file)
-                    accuracy = data['context']['best_config']['score'] * 100
+                    accuracy = data['context']['best_config']['score'] // 0.0001 / 100
                     pipeline = str(data['context']['best_config']['pipeline']).replace(",", " ")
                     num_iterations = data['context']['iteration']
                     best_iteration = data['context']['best_config']['iteration']
@@ -88,29 +89,26 @@ for algorithm in algorithms:
         out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
                   "num_iterations2,best_iteration2\n")
 
-pairs = []
 df = pd.read_csv("openml/meta-features.csv")
-df = df.loc[df['did'].isin(get_filtered_datasets())]
+df = df.loc[df['did'].isin(filtered_datasets)]
 for key, value in results.items():
-    if len(value) == 2:
-        pairs += [value]
-        acronym = key.split("_")[0]
-        dataset = key.split("_")[1]
-        name = df.loc[df['did'] == int(dataset)]['name'].values.tolist()[0]
-        dimensions = ' x '.join([str(int(a)) for a in df.loc[df['did'] == int(dataset)][['NumberOfInstances', 'NumberOfFeatures']].values.flatten().tolist()])
-        conf1 = value[0][0]
-        conf2 = value[1][0]
-        partial_results[acronym]['conf1'] += 1 if conf1 - conf2 >= 0.001 else 0
-        partial_results[acronym]['draws'] += 1 if (conf1 - conf2 <= 0.001) and (conf2 - conf1 <= 0.001) else 0
-        partial_results[acronym]['conf2'] += 1 if conf2 - conf1 >= 0.001 else 0
-        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
-            out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
-                      str(value[0][2]) + "," + str(value[0][3]) + "," + "," + str(conf2) + "," + str(value[1][1]) +
-                      "," + str(value[1][2]) +  "," + str(value[1][3]) + "\n")
+    acronym = key.split("_")[0]
+    dataset = key.split("_")[1]
+    name = df.loc[df['did'] == int(dataset)]['name'].values.tolist()[0]
+    dimensions = ' x '.join([str(int(a)) for a in df.loc[df['did'] == int(dataset)][['NumberOfInstances', 'NumberOfFeatures']].values.flatten().tolist()])
+    conf1 = value[0][0]
+    conf2 = value[1][0]
+    partial_results[acronym]['conf1'] += 1 if conf1 > conf2 else 0
+    partial_results[acronym]['draws'] += 1 if conf1 == conf2 else 0
+    partial_results[acronym]['conf2'] += 1 if conf1 < conf2 else 0
+    with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
+        out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
+                  str(value[0][2]) + "," + str(value[0][3]) + "," + str(conf2) + "," + str(value[1][1]) +
+                  "," + str(value[1][2]) +  "," + str(value[1][3]) + "\n")
 
-complete_results = {'conf1': sum(value[0][0] - value[1][0] >= 0.001 for value in pairs),
-                 'draws': sum((value[0][0] - value[1][0] <= 0.001) and (value[1][0] - value[0][0] <= 0.001) for value in pairs),
-                 'conf2': sum(value[1][0] - value[0][0] >= 0.001 for value in pairs)}
+complete_results = {'conf1': sum(value[0][0] > value[1][0] for key, value in results.items()),
+                 'draws': sum(value[0][0] == value[1][0] for key, value in results.items()),
+                 'conf2': sum(value[0][0] < value[1][0] for key, value in results.items())}
 
 with open(os.path.join(result_path, 'results.csv'), "a") as out:
     out.write("algorithm,conf1,draws,conf2\n")
