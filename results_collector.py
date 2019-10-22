@@ -35,7 +35,6 @@ def parse_args():
     input_paths = [args.first_input, args.second_input]
     result_path = args.output
     pipeline = args.pipeline
-    print(pipeline)
     return input_paths, result_path, pipeline
 
 def get_filtered_datasets():
@@ -63,20 +62,26 @@ def load_results(input_paths, filtered_datasets, comparison):
                         pipeline = str(data['context']['best_config']['pipeline']).replace(" ", "").replace(",", " ")
                         num_iterations = data['context']['iteration']
                         best_iteration = data['context']['best_config']['iteration']
-                        comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration)
+                        baseline_score = data['context']['baseline_score'] // 0.0001 / 100
+                        comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration, baseline_score)
                 else:
                     accuracy = 0
                     pipeline = ""
                     num_iterations = 0
                     best_iteration = 0
-                    comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration)
+                    baseline_score = 0
+                    comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration, baseline_score)
 
     return collections.OrderedDict(sorted(mergeDict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
 
-def create_output_files(result_path, partial_results):
+def create_output_files(result_path, partial_results, scheme):
+    first = scheme[0][0].upper()
+    second = scheme[1][0].upper()
+    firstOrSecond = first + "o" + second
+
     for algorithm in algorithms:
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
-        partial_results[acronym] = {'conf1': 0, 'draws': 0, 'conf2': 0, 'valid': 0}
+        partial_results[acronym] = {'conf1': 0, 'draws': 0, 'conf2': 0, 'baseline': 0, first: 0, second: 0, firstOrSecond: 0,'valid': 0}
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
             out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
                       "num_iterations2,best_iteration2,valid\n")
@@ -107,11 +112,105 @@ def check_validity(pipelines, result):
     return True
 
 
+def compute_result(result, acronym, partial_results, pipelines, scheme, baseline_scores, scores):
+    if baseline_scores[0] != baseline_scores[1]:
+        print('Baselines with different scores')
+
+    first = scheme[0][0].upper()
+    second = scheme[1][0].upper()
+    firstOrSecond = first + "o" + second
+
+    #case a, b, c, e, i
+    if result == 0 and baseline_scores[0] == scores[0]:
+        partial_results[acronym]['baseline'] += 1
+    #case d, o
+    elif pipelines["pipeline1"].count('NoneType') == 2 or pipelines["pipeline2"].count('NoneType') == 2:
+        if pipelines["pipeline1"].count('NoneType') == 2:
+            if result == 2:
+                partial_results[acronym]['conf2'] += 1
+            else:
+                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        else:
+            if result == 1:
+                partial_results[acronym]['conf1'] += 1
+            else:
+                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+    #case f, m, l, g
+    elif pipelines["pipeline1"].count('NoneType') == 1 and pipelines["pipeline2"].count('NoneType') == 1:
+        #case f
+        if pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][second] += 1
+            else:
+                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        #case m
+        elif pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][first] += 1
+            else:
+                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        #case g, l
+        elif (pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType') or (pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType'):
+            if result == 0:
+                partial_results[acronym][firstOrSecond] += 1
+            else:
+                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+    #case h, n
+    elif pipelines["pipeline1"].count('NoneType') == 1:
+        #case h
+        if pipelines["pipeline1"][0] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][second] += 1
+            elif result == 2:
+                partial_results[acronym]['conf2'] += 1
+            else:
+                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        #case n
+        if pipelines["pipeline1"][1] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][first] += 1
+            elif result == 2:
+                partial_results[acronym]['conf2'] += 1
+            else:
+                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+    # case p, q
+    elif pipelines["pipeline2"].count('NoneType') == 1:
+        # case p
+        if pipelines["pipeline2"][0] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][second] += 1
+            elif result == 1:
+                partial_results[acronym]['conf1'] += 1
+            else:
+                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        # case q
+        if pipelines["pipeline2"][1] == 'NoneType':
+            if result == 0:
+                partial_results[acronym][second] += 1
+            elif result == 1:
+                partial_results[acronym]['conf1'] += 1
+            else:
+                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+    #case r
+    elif pipelines["pipeline1"].count('NoneType') == 0 and pipelines["pipeline2"].count('NoneType') == 0:
+        if result == 0:
+            partial_results[acronym]['draws'] += 1
+        elif result == 1:
+            partial_results[acronym]['conf1'] += 1
+        elif result == 2:
+            partial_results[acronym]['conf2'] += 1
+    else:
+        print("This configuration matches nothing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+
+    return partial_results
 
 
 def aggregate_results(filtered_datasets, results, partial_results, result_path, pipeline):
     df = pd.read_csv("openml/meta-features.csv")
     df = df.loc[df['did'].isin(filtered_datasets)]
+    first = pipeline[0][0].upper()
+    second = pipeline[1][0].upper()
+    firstOrSecond = first + "o" + second
     for key, value in results.items():
         acronym = key.split("_")[0]
         dataset = key.split("_")[1]
@@ -133,12 +232,7 @@ def aggregate_results(filtered_datasets, results, partial_results, result_path, 
             result = 0
         valid = check_validity(pipelines, result)
         if valid:
-            if result == 0:
-                partial_results[acronym]['draws'] += 1
-            elif result == 1:
-                partial_results[acronym]['conf1'] += 1
-            elif result == 2:
-                partial_results[acronym]['conf2'] += 1
+            partial_results = compute_result(result, acronym, partial_results, pipelines, pipeline, [value[0][4], value[1][4]], [conf1, conf2])
             partial_results[acronym]['valid'] += 1
 
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
@@ -149,12 +243,19 @@ def aggregate_results(filtered_datasets, results, partial_results, result_path, 
     complete_results = {'conf1': sum(x['conf1'] for x in partial_results.values()),
                      'draws': sum(x['draws'] for x in partial_results.values()),
                      'conf2': sum(x['conf2'] for x in partial_results.values()),
+                     'baseline': sum(x['baseline'] for x in partial_results.values()),
+                     first: sum(x[first] for x in partial_results.values()),
+                     second: sum(x[second] for x in partial_results.values()),
+                     firstOrSecond: sum(x[firstOrSecond] for x in partial_results.values()),
                      'valid': sum(x['valid'] for x in partial_results.values())}
     return partial_results, complete_results
 
-def write_summary(result_path, partial_results, complete_results):
+def write_summary(result_path, partial_results, complete_results, scheme):
+    first = scheme[0][0].upper()
+    second = scheme[1][0].upper()
+    firstOrSecond = first + "o" + second
     with open(os.path.join(result_path, 'results.csv'), "a") as out:
-        out.write("algorithm,conf1,draws,conf2,valid\n")
+        out.write("algorithm,conf1,draws,conf2,baseline," + first + "," + second + "," + firstOrSecond + ",valid\n")
         for key, value in partial_results.items():
             row = key
             for k, v in value.items():
@@ -170,9 +271,9 @@ def main():
     input_paths, result_path, pipeline = parse_args()
     filtered_datasets = get_filtered_datasets()
     results = load_results(input_paths, filtered_datasets, {})
-    partial_results = create_output_files(result_path, {})
+    partial_results = create_output_files(result_path, {}, pipeline)
     partial_results, complete_results = aggregate_results(filtered_datasets, results, partial_results, result_path, pipeline)
-    write_summary(result_path, partial_results, complete_results)
+    write_summary(result_path, partial_results, complete_results, pipeline)
 
 main()
 
