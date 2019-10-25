@@ -119,7 +119,7 @@ with tqdm(total=total_runtime) as pbar:
         base_scenario = info['path'].split('.yaml')[0]
         output = base_scenario.split('_')[0]
         pbar.set_description("Running scenario {}\n\r".format(info['path']))
-        cmd = 'python3.7 ./main.py -s {} -c control.seed={} -p {} -r {}'.format(
+        cmd = 'python3 ./main.py -s {} -c control.seed={} -p {} -r {}'.format(
             os.path.join(SCENARIO_PATH, info['path']),
             GLOBAL_SEED,
             reduce(lambda x, y: x + " " + y, args.pipeline),
