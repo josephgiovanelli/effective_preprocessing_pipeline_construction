@@ -68,11 +68,13 @@ class PrototypeSingleton:
 
    def resetFeatures(self):
        self.current_numerical_features = self.original_numerical_features
-       self.current_categorical_features = self.original_categorical_features
+       self.current_categorical_features = []
+       self.current_categorical_features.extend(self.original_categorical_features)
+
 
    def discretizeFeatures(self):
+       self.current_categorical_features.extend(self.current_numerical_features)
        self.current_numerical_features = []
-       self.current_categorical_features = list(self.X.columns)
 
    def getFeatures(self):
        return self.current_numerical_features, self.current_categorical_features
