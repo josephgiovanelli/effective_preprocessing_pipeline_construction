@@ -101,10 +101,10 @@ def compose_pipeline(pipeline1, pipeline2, scheme):
     pipelines = {"pipeline1": [], "pipeline2": []}
     for step in scheme:
         if pipeline1 != "":
-            raw_pipeline1 = json.loads(pipeline1.replace('\'', '\"').replace(" ", ","))
+            raw_pipeline1 = json.loads(pipeline1.replace('\'', '\"').replace(" ", ",").replace("True", "1").replace("False", "0"))
             pipelines["pipeline1"].append(raw_pipeline1[step][0].split("_")[1])
         if pipeline2 != "":
-            raw_pipeline2 = json.loads(pipeline2.replace('\'', '\"').replace(" ", ","))
+            raw_pipeline2 = json.loads(pipeline2.replace('\'', '\"').replace(" ", ",").replace("True", "1").replace("False", "0"))
             pipelines["pipeline2"].append(raw_pipeline2[step][0].split("_")[1])
     return pipelines
 
