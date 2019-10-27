@@ -1,6 +1,6 @@
 from __future__ import print_function
 from sklearn.feature_selection import RFE
-from sklearn.svm import SVC, SVR
+from sklearn.svm import SVR
 from yellowbrick.target import FeatureCorrelation
 from os import listdir
 from os.path import isfile, join
@@ -91,7 +91,7 @@ def create_output_files(result_path, grouped_by_algorithm_results, scheme):
 
     for algorithm in algorithms:
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
-        grouped_by_algorithm_results[acronym] = {firstSecond: 0, draws: 0, secondFirst: 0, 'NN': 0, first: 0, second: 0, firstOrSecond: 0, 'valid': 0}
+        grouped_by_algorithm_results[acronym] = {firstSecond: 0, draws: 0, secondFirst: 0, 'baseline': 0, first: 0, second: 0, firstOrSecond: 0, 'valid': 0}
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
             out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
                       "num_iterations2,best_iteration2,valid\n")
@@ -135,8 +135,8 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
 
     #case a, b, c, e, i
     if result == 0 and baseline_scores[0] == scores[0]:
-        grouped_by_dataset_result[dataset][acronym] = 'NN'
-        grouped_by_algorithm_results[acronym]['NN'] += 1
+        grouped_by_dataset_result[dataset][acronym] = 'baseline'
+        grouped_by_algorithm_results[acronym]['baseline'] += 1
     #case d, o
     elif pipelines["pipeline1"].count('NoneType') == 2 or pipelines["pipeline2"].count('NoneType') == 2:
         if pipelines["pipeline1"].count('NoneType') == 2:
@@ -283,7 +283,7 @@ def aggregate_results(filtered_datasets, results, grouped_by_algorithm_results, 
     summary = {firstSecond: sum(x[firstSecond] for x in grouped_by_algorithm_results.values()),
                      draws: sum(x[draws] for x in grouped_by_algorithm_results.values()),
                      secondFirst: sum(x[secondFirst] for x in grouped_by_algorithm_results.values()),
-                     'NN': sum(x['NN'] for x in grouped_by_algorithm_results.values()),
+                     'baseline': sum(x['baseline'] for x in grouped_by_algorithm_results.values()),
                      first: sum(x[first] for x in grouped_by_algorithm_results.values()),
                      second: sum(x[second] for x in grouped_by_algorithm_results.values()),
                      firstOrSecond: sum(x[firstOrSecond] for x in grouped_by_algorithm_results.values()),
@@ -298,7 +298,7 @@ def write_summary(result_path, grouped_by_algorithm_results, summary, scheme):
     secondFirst = second + first
     draws = firstSecond + "o" + secondFirst
     with open(os.path.join(result_path, 'results.csv'), "a") as out:
-        out.write("algorithm," + firstSecond + "," + draws + "," + secondFirst + ",NN," + first + "," + second + "," + firstOrSecond + ",valid\n")
+        out.write("algorithm," + firstSecond + "," + draws + "," + secondFirst + ",baseline," + first + "," + second + "," + firstOrSecond + ",valid\n")
         for key, value in grouped_by_algorithm_results.items():
             row = key
             for k, v in value.items():
@@ -370,37 +370,64 @@ def create_hamming_matrix(result_path, X, y):
 
 
 
-def create_correlation_matrix(result_path, grouped_by_dataset_result):
+def create_correlation_matrix(result_path, filtered_datasets, grouped_by_dataset_result):
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
             data.append([dataset, algorithm, result])
 
-    df = pd.DataFrame(OrdinalEncoder().fit_transform(data))
-    kendall = df.corr(method='kendall')
-    pearson = df.corr(method='pearson')
-    spearman = df.corr(method='spearman')
+    # data = OrdinalEncoder().fit_transform(data)
+    # X = data[:, :-1]
+    # y = data[:, -1]
+    # create_hamming_matrix(result_path, X.astype(int), y.astype(int))
 
-    f = np.array(['dataset', 'algorithm'])
-    data = OrdinalEncoder().fit_transform(data)
-    X = data[:,:-1]
-    y = data[:,-1]
-    create_hamming_matrix(result_path, X.astype(int), y.astype(int))
-    visualizer = FeatureCorrelation(method='mutual_info-regression', labels=f)
-    visualizer.fit(X, y, discrete_features=[True, True], random_state=0)
-    mutual_info_regression = visualizer.scores_
+    df = pd.DataFrame(data)
+    df.columns=['dataset', 'algorithm', 'class']
+
+    meta = pd.read_csv("openml/meta-features.csv")
+    meta = meta.loc[meta['did'].isin(filtered_datasets)]
+
+    join = pd.merge(df.astype(str), meta.astype(str), left_on="dataset", right_on="did")
+    join = join.drop(columns=["version", "status", "format", "uploader", "did", "row"])
+    encoded = pd.DataFrame(OrdinalEncoder().fit_transform(join), columns=join.columns)
+
+    kendall = encoded.corr(method='kendall')
+    pearson = encoded.corr(method='pearson')
+    spearman = encoded.corr(method='spearman')
+
+    with open(os.path.join(result_path, 'join.csv'), "a") as out:
+        out.write(join.to_csv())
+
+    with open(os.path.join(result_path, 'kendall.csv'), "a") as out:
+        out.write(kendall.to_csv())
+
+    with open(os.path.join(result_path, 'pearson.csv'), "a") as out:
+        out.write(pearson.to_csv())
+
+    with open(os.path.join(result_path, 'spearman.csv'), "a") as out:
+        out.write(spearman.to_csv())
+
+    X, y = encoded.drop(columns=["class"]), encoded["class"]
+    visualizer = FeatureCorrelation(method='mutual_info-classification', labels=X.columns)
+    visualizer.fit(X, y, random_state=0)
+    mutual_info_classification = visualizer.scores_
+    visualizer.show(outpath=os.path.join(result_path, "featureCorrelation.png"))
 
     estimator = SVR(kernel="linear")
-    selector = RFE(estimator, step=1, n_features_to_select=2)
+    selector = RFE(estimator, step=1, n_features_to_select=1)
     selector = selector.fit(X, y)
-    rfe_coefficient = selector.estimator_.coef_
+    rfe_coefficient = selector. estimator_.coef_
+    print(list(X.columns))
+    print(selector.ranking_)
+    print(rfe_coefficient)
 
     with open(os.path.join(result_path, 'correlation_matrix.csv'), "a") as out:
-        out.write(",kendall,pearson,spearman,mutual_info_regression,rfe_coefficient\n")
-        out.write("dataset," + str(kendall[0][2]) + "," + str(pearson[0][2]) + "," + str(spearman[0][2]) + "," +
-                  str(mutual_info_regression[0]) + "," + str(rfe_coefficient[0][0]) + "\n")
-        out.write("algorithm," + str(kendall[1][2]) + "," + str(pearson[1][2]) + "," + str(spearman[1][2]) + "," +
-                  str(mutual_info_regression[1]) + "," + str(rfe_coefficient[0][1]))
+        out.write(",kendall,pearson,spearman,mutual_info_classification\n")
+        out.write("dataset," + str(kendall["dataset"]["class"]) + "," + str(pearson["dataset"]["class"]) + "," + str(spearman["dataset"]["class"]) + "," +
+                  str(mutual_info_classification[0]) + "\n")
+        out.write("algorithm," + str(kendall["algorithm"]["class"]) + "," + str(pearson["algorithm"]["class"]) + "," + str(spearman["algorithm"]["class"]) + "," +
+                  str(mutual_info_classification[1]))
+
 
 def main():
     input_paths, result_path, pipeline = parse_args()
@@ -411,7 +438,7 @@ def main():
         filtered_datasets, results, grouped_by_algorithm_results, result_path, pipeline)
     write_summary(result_path, grouped_by_algorithm_results, summary, pipeline)
     create_num_equal_elements_matrix(result_path, grouped_by_dataset_result)
-    create_correlation_matrix(result_path, grouped_by_dataset_result)
+    create_correlation_matrix(result_path, filtered_datasets, grouped_by_dataset_result)
 
 main()
 
