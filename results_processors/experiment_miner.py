@@ -1,6 +1,4 @@
 from __future__ import print_function
-from sklearn.feature_selection import RFE
-from sklearn.svm import SVR
 from yellowbrick.target import FeatureCorrelation
 from os import listdir
 from os.path import isfile, join
@@ -44,6 +42,29 @@ def parse_args():
     pipeline = args.pipeline
     return input_paths, result_path, pipeline
 
+def create_possible_categories(pipeline):
+    first = pipeline[0][0].upper()
+    second = pipeline[1][0].upper()
+    first_or_second = first + "o" + second
+    first_second = first + second
+    second_first = second + first
+    draw = first_second + "o" + second_first
+    baseline = 'baseline'
+    inconsistent = 'inconsistent'
+    not_exec = 'not_exec'
+    not_exec_once = 'not_exec_once'
+
+    return {'first': first,
+            'second': second,
+            'first_or_second': first_or_second,
+            'first_second': first_second,
+            'second_first': second_first,
+            'draw': draw,
+            'baseline': baseline,
+            'inconsistent': inconsistent,
+            'not_exec': not_exec,
+            'not_exec_once': not_exec_once}
+
 def get_filtered_datasets():
     df = pd.read_csv("../openml/meta-features.csv")
     df = df.loc[df['did'].isin(benchmark_suite)]
@@ -53,7 +74,8 @@ def get_filtered_datasets():
     df = df['did']
     return df.values.flatten().tolist()
 
-def load_results(input_paths, filtered_datasets, comparison):
+def load_results(input_paths, filtered_datasets):
+    comparison = {}
     for path in input_paths:
         files = [f for f in listdir(path) if isfile(join(path, f))]
         results = [f[:-5] for f in files if f[-4:] == 'json']
@@ -81,21 +103,30 @@ def load_results(input_paths, filtered_datasets, comparison):
 
     return collections.OrderedDict(sorted(mergeDict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
 
-def create_output_files(result_path, grouped_by_algorithm_results, scheme):
-    first = scheme[0][0].upper()
-    second = scheme[1][0].upper()
-    firstOrSecond = first + "o" + second
-    firstSecond = first + second
-    secondFirst = second + first
-    draws = firstSecond + "o" + secondFirst
 
+def write_simple_results(result_path, simple_results, filtered_datasets):
     for algorithm in algorithms:
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
-        grouped_by_algorithm_results[acronym] = {firstSecond: 0, draws: 0, secondFirst: 0, 'baseline': 0, first: 0, second: 0, firstOrSecond: 0, 'inconsistent': 0, 'not_exec': 0, 'not_exec_once': 0}
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
             out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
                       "num_iterations2,best_iteration2\n")
-    return grouped_by_algorithm_results
+
+    df = pd.read_csv("../openml/meta-features.csv")
+    df = df.loc[df['did'].isin(filtered_datasets)]
+
+    for key, value in simple_results.items():
+        acronym = key.split("_")[0]
+        dataset = key.split("_")[1]
+        conf1 = value[0][0]
+        conf2 = value[1][0]
+        name = df.loc[df['did'] == int(dataset)]['name'].values.tolist()[0]
+        dimensions = ' x '.join([str(int(a)) for a in df.loc[df['did'] == int(dataset)][
+            ['NumberOfInstances', 'NumberOfFeatures']].values.flatten().tolist()])
+
+        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
+            out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
+                      str(value[0][2]) + "," + str(value[0][3]) + "," + str(conf2) + "," + str(value[1][1]) +
+                      "," + str(value[1][2]) + "," + str(value[1][3]) + "\n")
 
 def compose_pipeline(pipeline1, pipeline2, scheme):
     pipelines = {"pipeline1": [], "pipeline2": []}
@@ -128,16 +159,9 @@ def check_validity(pipelines, result):
     return validity, problem
 
 
-def compute_result(result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, scheme, baseline_scores, scores):
+def compute_result(result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, categories, baseline_scores, scores):
     if baseline_scores[0] != baseline_scores[1]:
         print('Baselines with different scores')
-
-    first = scheme[0][0].upper()
-    second = scheme[1][0].upper()
-    firstOrSecond = first + "o" + second
-    firstSecond = first + second
-    secondFirst = second + first
-    draws = firstSecond + "o" + secondFirst
 
     #case a, b, c, e, i
     if result == 0 and baseline_scores[0] == scores[0]:
@@ -147,14 +171,14 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
     elif pipelines["pipeline1"].count('NoneType') == 2 or pipelines["pipeline2"].count('NoneType') == 2:
         if pipelines["pipeline1"].count('NoneType') == 2:
             if result == 2:
-                grouped_by_dataset_result[dataset][acronym] = secondFirst
-                grouped_by_algorithm_results[acronym][secondFirst] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second_first']
+                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
             else:
                 print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         else:
             if result == 1:
-                grouped_by_dataset_result[dataset][acronym] = firstSecond
-                grouped_by_algorithm_results[acronym][firstSecond] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first_second']
+                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
             else:
                 print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case f, m, l, g
@@ -162,22 +186,22 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
         #case f
         if pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = second
-                grouped_by_algorithm_results[acronym][second] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second']
+                grouped_by_algorithm_results[acronym][categories['second']] += 1
             else:
                 print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case m
         elif pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = first
-                grouped_by_algorithm_results[acronym][first] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first']
+                grouped_by_algorithm_results[acronym][categories['first']] += 1
             else:
                 print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case g, l
         elif (pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType') or (pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType'):
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = firstOrSecond
-                grouped_by_algorithm_results[acronym][firstOrSecond] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first_or_second']
+                grouped_by_algorithm_results[acronym][categories['first_or_second']] += 1
             else:
                 print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case h, n
@@ -185,21 +209,21 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
         #case h
         if pipelines["pipeline1"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = second
-                grouped_by_algorithm_results[acronym][second] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second']
+                grouped_by_algorithm_results[acronym][categories['second']] += 1
             elif result == 2:
-                grouped_by_dataset_result[dataset][acronym] = secondFirst
-                grouped_by_algorithm_results[acronym][secondFirst] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second_first']
+                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
             else:
                 print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case n
         elif pipelines["pipeline1"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = first
-                grouped_by_algorithm_results[acronym][first] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first']
+                grouped_by_algorithm_results[acronym][categories['first']] += 1
             elif result == 2:
-                grouped_by_dataset_result[dataset][acronym] = secondFirst
-                grouped_by_algorithm_results[acronym][secondFirst] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second_first']
+                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
             else:
                 print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     # case p, q
@@ -207,57 +231,46 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
         # case p
         if pipelines["pipeline2"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = second
-                grouped_by_algorithm_results[acronym][second] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second']
+                grouped_by_algorithm_results[acronym][categories['second']] += 1
             elif result == 1:
-                grouped_by_dataset_result[dataset][acronym] = firstSecond
-                grouped_by_algorithm_results[acronym][firstSecond] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first_second']
+                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
             else:
                 print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         # case q
         elif pipelines["pipeline2"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = second
-                grouped_by_algorithm_results[acronym][second] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['second']
+                grouped_by_algorithm_results[acronym][categories['second']] += 1
             elif result == 1:
-                grouped_by_dataset_result[dataset][acronym] = firstSecond
-                grouped_by_algorithm_results[acronym][firstSecond] += 1
+                grouped_by_dataset_result[dataset][acronym] = categories['first_second']
+                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
             else:
                 print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case r
     elif pipelines["pipeline1"].count('NoneType') == 0 and pipelines["pipeline2"].count('NoneType') == 0:
         if result == 0:
-            grouped_by_dataset_result[dataset][acronym] = draws
-            grouped_by_algorithm_results[acronym][draws] += 1
+            grouped_by_dataset_result[dataset][acronym] = categories['draw']
+            grouped_by_algorithm_results[acronym][categories['draw']] += 1
         elif result == 1:
-            grouped_by_dataset_result[dataset][acronym] = firstSecond
-            grouped_by_algorithm_results[acronym][firstSecond] += 1
+            grouped_by_dataset_result[dataset][acronym] = categories['first_second']
+            grouped_by_algorithm_results[acronym][categories['first_second']] += 1
         elif result == 2:
-            grouped_by_dataset_result[dataset][acronym] = secondFirst
-            grouped_by_algorithm_results[acronym][secondFirst] += 1
+            grouped_by_dataset_result[dataset][acronym] = categories['second_first']
+            grouped_by_algorithm_results[acronym][categories['second_first']] += 1
     else:
         print("This configuration matches nothing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
 
     return grouped_by_algorithm_results, grouped_by_dataset_result
 
-
-def aggregate_results(filtered_datasets, results, grouped_by_algorithm_results, result_path, pipeline):
-    df = pd.read_csv("../openml/meta-features.csv")
-    df = df.loc[df['did'].isin(filtered_datasets)]
-    first = pipeline[0][0].upper()
-    second = pipeline[1][0].upper()
-    firstOrSecond = first + "o" + second
-    firstSecond = first + second
-    secondFirst = second + first
-    draws = firstSecond + "o" + secondFirst
-
-    firstOrSecond = first + "o" + second
+def aggregate_results(simple_results, pipeline, categories):
     grouped_by_dataset_result = {}
-    for key, value in results.items():
+    grouped_by_algorithm_results = {}
+
+    for key, value in simple_results.items():
         acronym = key.split("_")[0]
         dataset = key.split("_")[1]
-        name = df.loc[df['did'] == int(dataset)]['name'].values.tolist()[0]
-        dimensions = ' x '.join([str(int(a)) for a in df.loc[df['did'] == int(dataset)][['NumberOfInstances', 'NumberOfFeatures']].values.flatten().tolist()])
         conf1 = value[0][0]
         conf2 = value[1][0]
         pipelines = compose_pipeline(value[0][1], value[1][1], pipeline)
@@ -270,40 +283,34 @@ def aggregate_results(filtered_datasets, results, grouped_by_algorithm_results, 
             result = 2
         if result == -1:
             raise ValueError('A very bad thing happened.')
-        #if acronym == "knn" and result != 0 and abs(conf1 - conf2) < 1:
-        #    result = 0
+
         validity, problem = check_validity(pipelines, result)
-        if not (grouped_by_dataset_result.__contains__(dataset)):
+
+        if not(grouped_by_dataset_result.__contains__(dataset)):
             grouped_by_dataset_result[dataset] = {}
+
+        if not(grouped_by_algorithm_results.__contains__(acronym)):
+            grouped_by_algorithm_results[acronym] = {}
+            for _, category in categories.items():
+                grouped_by_algorithm_results[acronym][category] = 0
 
         if validity:
             grouped_by_algorithm_results, grouped_by_dataset_result = compute_result(
-                result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, pipeline,
+                result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, categories,
                 [value[0][4], value[1][4]], [conf1, conf2])
         else:
             grouped_by_dataset_result[dataset][acronym] = problem
             grouped_by_algorithm_results[acronym][problem] += 1
 
+    return grouped_by_algorithm_results, grouped_by_dataset_result
 
-        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
-            out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
-                      str(value[0][2]) + "," + str(value[0][3]) + "," + str(conf2) + "," + str(value[1][1]) +
-                      "," + str(value[1][2]) +  "," + str(value[1][3]) + "\n")
+def create_summary(grouped_by_algorithm_results, categories):
+    summary = {}
+    for _, category in categories.items():
+        summary[category] = sum(x[category] for x in grouped_by_algorithm_results.values())
+    return summary
 
-    summary = {firstSecond: sum(x[firstSecond] for x in grouped_by_algorithm_results.values()),
-               draws: sum(x[draws] for x in grouped_by_algorithm_results.values()),
-               secondFirst: sum(x[secondFirst] for x in grouped_by_algorithm_results.values()),
-               'baseline': sum(x['baseline'] for x in grouped_by_algorithm_results.values()),
-               first: sum(x[first] for x in grouped_by_algorithm_results.values()),
-               second: sum(x[second] for x in grouped_by_algorithm_results.values()),
-               firstOrSecond: sum(x[firstOrSecond] for x in grouped_by_algorithm_results.values()),
-               'inconsistent': sum(x['inconsistent'] for x in grouped_by_algorithm_results.values()),
-               'not_exec': sum(x['not_exec'] for x in grouped_by_algorithm_results.values()),
-               'not_exec_once': sum(x['not_exec_once'] for x in grouped_by_algorithm_results.values())}
-
-    return grouped_by_algorithm_results, grouped_by_dataset_result, summary
-
-def write_summary(result_path, grouped_by_algorithm_results, summary, scheme):
+def write_summary(result_path, grouped_by_algorithm_results, summary):
     with open(os.path.join(result_path, 'results.csv'), "a") as out:
         out.write(',' + ','.join(summary.keys()) + '\n')
         for key, value in grouped_by_algorithm_results.items():
@@ -357,7 +364,7 @@ def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
             out.write(row)
 
 
-def create_hamming_matrix(result_path, X, y):
+def create_hamming_matrix(X, y):
     def hamming_distance(s1, s2):
         assert len(s1) == len(s2)
         return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
@@ -420,17 +427,19 @@ def save_correlation_matrix(result_path, correlation_matrix):
     with open(os.path.join(result_path, 'correlation_matrix.csv'), "w") as out:
         out.write(correlation_matrix.to_csv())
 
-
 def main():
     input_paths, result_path, pipeline = parse_args()
-    filtered_datasets = get_filtered_datasets()
-    results = load_results(input_paths, filtered_datasets, {})
-    grouped_by_algorithm_results = create_output_files(result_path, {}, pipeline)
-    grouped_by_algorithm_results, grouped_by_dataset_result, summary = aggregate_results(
-        filtered_datasets, results, grouped_by_algorithm_results, result_path, pipeline)
-    write_summary(result_path, grouped_by_algorithm_results, summary, pipeline)
+    categories = create_possible_categories(pipeline)
 
-    print(grouped_by_dataset_result)
+    filtered_datasets = get_filtered_datasets()
+
+    simple_results = load_results(input_paths, filtered_datasets)
+    write_simple_results(result_path, simple_results, filtered_datasets)
+
+    grouped_by_algorithm_results, grouped_by_dataset_result = aggregate_results(simple_results, pipeline, categories)
+    summary = create_summary(grouped_by_algorithm_results, categories)
+    write_summary(result_path, grouped_by_algorithm_results, summary)
+
     num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
     save_num_equal_elements_matrix(result_path, num_equal_elements_matrix)
 
@@ -438,12 +447,3 @@ def main():
     save_correlation_matrix(result_path, correlation_matrix)
 
 main()
-
-
-
-
-
-
-
-
-
