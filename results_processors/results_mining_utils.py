@@ -41,18 +41,20 @@ def get_filtered_datasets():
     df = df['did']
     return df.values.flatten().tolist()
 
-def merge_dict(dict1, dict2):
+def merge_dict(list):
     """ Merge dictionaries and keep values of common keys in list"""
-    dict3 = {**dict2, **dict1}
-    for key, value in dict3.items():
-        if key in dict2 and key in dict1:
-            dict3[key] = [value, dict2[key]]
+    new_dict = {}
+    for key, value in list[0].items():
+        new_value = []
+        for dict in list:
+            new_value.append(dict[key])
+        new_dict[key] = new_value
+    return new_dict
 
-    return dict3
-
-def load_results(input_paths, filtered_datasets):
+def load_results(input_path, filtered_datasets):
     comparison = {}
-    for path in input_paths:
+    confs = [os.path.join(input_path, "conf1"), os.path.join(input_path, "conf2")]
+    for path in confs:
         files = [f for f in listdir(path) if isfile(join(path, f))]
         results = [f[:-5] for f in files if f[-4:] == 'json']
         comparison[path] = {}
@@ -81,7 +83,7 @@ def load_results(input_paths, filtered_datasets):
                 comparison[path][acronym]['best_iteration'] = best_iteration
                 comparison[path][acronym]['baseline_score'] = baseline_score
 
-    return collections.OrderedDict(sorted(merge_dict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
+    return collections.OrderedDict(sorted(merge_dict([comparison[confs[0]], comparison[confs[1]]]).items()))
 
 
 def save_simple_results(result_path, simple_results, filtered_datasets):
