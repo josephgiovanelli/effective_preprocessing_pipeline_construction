@@ -45,7 +45,7 @@ def parse_args():
     return input_paths, result_path, pipeline
 
 def get_filtered_datasets():
-    df = pd.read_csv("openml/meta-features.csv")
+    df = pd.read_csv("../openml/meta-features.csv")
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
@@ -67,8 +67,8 @@ def load_results(input_paths, filtered_datasets, comparison):
                         data = json.load(json_file)
                         accuracy = data['context']['best_config']['score'] // 0.0001 / 100
                         pipeline = str(data['context']['best_config']['pipeline']).replace(" ", "").replace(",", " ")
-                        num_iterations = data['context']['iteration']
-                        best_iteration = data['context']['best_config']['iteration']
+                        num_iterations = data['context']['iteration'] + 1
+                        best_iteration = data['context']['best_config']['iteration'] + 1
                         baseline_score = data['context']['baseline_score'] // 0.0001 / 100
                         comparison[path][acronym] = (accuracy, pipeline, num_iterations, best_iteration, baseline_score)
                 else:
@@ -91,10 +91,10 @@ def create_output_files(result_path, grouped_by_algorithm_results, scheme):
 
     for algorithm in algorithms:
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
-        grouped_by_algorithm_results[acronym] = {firstSecond: 0, draws: 0, secondFirst: 0, 'baseline': 0, first: 0, second: 0, firstOrSecond: 0, 'valid': 0}
+        grouped_by_algorithm_results[acronym] = {firstSecond: 0, draws: 0, secondFirst: 0, 'baseline': 0, first: 0, second: 0, firstOrSecond: 0, 'inconsistent': 0, 'not_exec': 0, 'not_exec_once': 0}
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
             out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
-                      "num_iterations2,best_iteration2,valid\n")
+                      "num_iterations2,best_iteration2\n")
     return grouped_by_algorithm_results
 
 def compose_pipeline(pipeline1, pipeline2, scheme):
@@ -110,16 +110,22 @@ def compose_pipeline(pipeline1, pipeline2, scheme):
 
 
 def check_validity(pipelines, result):
-    if pipelines["pipeline1"] == [] or pipelines["pipeline1"] == []:
-        return False
+    validity = False
+    if pipelines["pipeline1"] == [] and pipelines["pipeline2"] == []:
+        validity, problem = False, 'not_exec'
+    elif pipelines["pipeline1"] == [] or pipelines["pipeline2"] == []:
+        validity, problem = False, 'not_exec_once'
     else:
         if pipelines["pipeline1"].__contains__('NoneType') and pipelines["pipeline2"].__contains__('NoneType'):
-            return result == 0
-        if pipelines["pipeline1"].__contains__('NoneType') and not(pipelines["pipeline2"].__contains__('NoneType')):
-            return result == 0 or result == 2
-        if not(pipelines["pipeline1"].__contains__('NoneType')) and pipelines["pipeline2"].__contains__('NoneType'):
-            return result == 0 or result == 1
-    return True
+            validity = result == 0
+        elif pipelines["pipeline1"].__contains__('NoneType') and not(pipelines["pipeline2"].__contains__('NoneType')):
+            validity = result == 0 or result == 2
+        elif not(pipelines["pipeline1"].__contains__('NoneType')) and pipelines["pipeline2"].__contains__('NoneType'):
+            validity = result == 0 or result == 1
+        else:
+            validity = True
+        problem = '' if validity else 'inconsistent'
+    return validity, problem
 
 
 def compute_result(result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, scheme, baseline_scores, scores):
@@ -236,7 +242,7 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
 
 
 def aggregate_results(filtered_datasets, results, grouped_by_algorithm_results, result_path, pipeline):
-    df = pd.read_csv("openml/meta-features.csv")
+    df = pd.read_csv("../openml/meta-features.csv")
     df = df.loc[df['did'].isin(filtered_datasets)]
     first = pipeline[0][0].upper()
     second = pipeline[1][0].upper()
@@ -264,41 +270,42 @@ def aggregate_results(filtered_datasets, results, grouped_by_algorithm_results, 
             result = 2
         if result == -1:
             raise ValueError('A very bad thing happened.')
-        if acronym == "knn" and result == 0 and abs(conf1 - conf2) < 1:
-            result = 0
-        valid = check_validity(pipelines, result)
-        if valid:
-            if not(grouped_by_dataset_result.__contains__(dataset)):
-                grouped_by_dataset_result[dataset] = {}
+        #if acronym == "knn" and result != 0 and abs(conf1 - conf2) < 1:
+        #    result = 0
+        validity, problem = check_validity(pipelines, result)
+        if not (grouped_by_dataset_result.__contains__(dataset)):
+            grouped_by_dataset_result[dataset] = {}
+
+        if validity:
             grouped_by_algorithm_results, grouped_by_dataset_result = compute_result(
                 result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, pipeline,
                 [value[0][4], value[1][4]], [conf1, conf2])
-            grouped_by_algorithm_results[acronym]['valid'] += 1
+        else:
+            grouped_by_dataset_result[dataset][acronym] = problem
+            grouped_by_algorithm_results[acronym][problem] += 1
+
 
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
             out.write(dataset + "," + name + "," + dimensions + "," + str(conf1) + "," + str(value[0][1]) + "," +
                       str(value[0][2]) + "," + str(value[0][3]) + "," + str(conf2) + "," + str(value[1][1]) +
-                      "," + str(value[1][2]) +  "," + str(value[1][3]) +  "," + str(valid) + "\n")
+                      "," + str(value[1][2]) +  "," + str(value[1][3]) + "\n")
 
     summary = {firstSecond: sum(x[firstSecond] for x in grouped_by_algorithm_results.values()),
-                     draws: sum(x[draws] for x in grouped_by_algorithm_results.values()),
-                     secondFirst: sum(x[secondFirst] for x in grouped_by_algorithm_results.values()),
-                     'baseline': sum(x['baseline'] for x in grouped_by_algorithm_results.values()),
-                     first: sum(x[first] for x in grouped_by_algorithm_results.values()),
-                     second: sum(x[second] for x in grouped_by_algorithm_results.values()),
-                     firstOrSecond: sum(x[firstOrSecond] for x in grouped_by_algorithm_results.values()),
-                     'valid': sum(x['valid'] for x in grouped_by_algorithm_results.values())}
+               draws: sum(x[draws] for x in grouped_by_algorithm_results.values()),
+               secondFirst: sum(x[secondFirst] for x in grouped_by_algorithm_results.values()),
+               'baseline': sum(x['baseline'] for x in grouped_by_algorithm_results.values()),
+               first: sum(x[first] for x in grouped_by_algorithm_results.values()),
+               second: sum(x[second] for x in grouped_by_algorithm_results.values()),
+               firstOrSecond: sum(x[firstOrSecond] for x in grouped_by_algorithm_results.values()),
+               'inconsistent': sum(x['inconsistent'] for x in grouped_by_algorithm_results.values()),
+               'not_exec': sum(x['not_exec'] for x in grouped_by_algorithm_results.values()),
+               'not_exec_once': sum(x['not_exec_once'] for x in grouped_by_algorithm_results.values())}
+
     return grouped_by_algorithm_results, grouped_by_dataset_result, summary
 
 def write_summary(result_path, grouped_by_algorithm_results, summary, scheme):
-    first = scheme[0][0].upper()
-    second = scheme[1][0].upper()
-    firstOrSecond = first + "o" + second
-    firstSecond = first + second
-    secondFirst = second + first
-    draws = firstSecond + "o" + secondFirst
     with open(os.path.join(result_path, 'results.csv'), "a") as out:
-        out.write("algorithm," + firstSecond + "," + draws + "," + secondFirst + ",baseline," + first + "," + second + "," + firstOrSecond + ",valid\n")
+        out.write(',' + ','.join(summary.keys()) + '\n')
         for key, value in grouped_by_algorithm_results.items():
             row = key
             for k, v in value.items():
@@ -316,32 +323,37 @@ def max_frequency(list):
 
     for i in list:
         curr_frequency = list.count(i)
-        if (curr_frequency > counter):
+        if curr_frequency > counter:
             counter = curr_frequency
             num = i
 
     return num, counter
 
-
-
-def create_num_equal_elements_matrix(result_path, grouped_by_dataset_result):
-    num_equal_elements = np.zeros((5, 5))
+def create_num_equal_elements_matrix(grouped_by_dataset_result):
+    num_equal_elements_matrix = np.zeros((5, 5))
 
     for dataset, value in grouped_by_dataset_result.items():
         list_values = []
-        for k, v in value.items():
-            list_values.append(v)
-        _, freq = max_frequency(list_values)
-        num_equal_elements[len(value) - 1][freq - 1] += 1
+        for _, label in value.items():
+            if label != 'inconsistent' and label != 'not_exec' and label != 'not_exec_once':
+                list_values.append(label)
+        if list_values:
+            _, freq = max_frequency(list_values)
+            num_equal_elements_matrix[len(list_values) - 1][freq - 1] += 1
 
-    with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), "a") as out:
+    return num_equal_elements_matrix
+
+def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
+    with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), "w") as out:
         out.write("length,1,2,3,4,5,tot\n")
-        for i in range(0, np.size(num_equal_elements, 0)):
+        for i in range(0, np.size(num_equal_elements_matrix, 0)):
             row = str(i + 1)
-            for j in range(0, np.size(num_equal_elements, 1)):
-                row += "," + str(int(num_equal_elements[i][j]))
-            row += "," + str(len(list(filter(lambda y: len(y) == i + 1, grouped_by_dataset_result.values()))))
-            row += "\n"
+            sum = 0
+            for j in range(0, np.size(num_equal_elements_matrix, 1)):
+                value = int(num_equal_elements_matrix[i][j])
+                sum += value
+                row += "," + str(value)
+            row += "," + str(sum) + "\n"
             out.write(row)
 
 
@@ -366,67 +378,47 @@ def create_hamming_matrix(result_path, X, y):
 
             value = np.zeros(5)
             value[X[i][1]] = y[i] + 1
-    print(hamming_matrix)
+    return hamming_matrix
 
 
 
-def create_correlation_matrix(result_path, filtered_datasets, grouped_by_dataset_result):
+def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result):
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
             data.append([dataset, algorithm, result])
 
-    # data = OrdinalEncoder().fit_transform(data)
-    # X = data[:, :-1]
-    # y = data[:, -1]
-    # create_hamming_matrix(result_path, X.astype(int), y.astype(int))
-
     df = pd.DataFrame(data)
-    df.columns=['dataset', 'algorithm', 'class']
+    df.columns = ['dataset', 'algorithm', 'class']
 
-    meta = pd.read_csv("openml/meta-features.csv")
+    meta = pd.read_csv("../openml/meta-features.csv")
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
 
     join = pd.merge(df.astype(str), meta.astype(str), left_on="dataset", right_on="did")
     join = join.drop(columns=["version", "status", "format", "uploader", "did", "row"])
     encoded = pd.DataFrame(OrdinalEncoder().fit_transform(join), columns=join.columns)
 
-    kendall = encoded.corr(method='kendall')
-    pearson = encoded.corr(method='pearson')
-    spearman = encoded.corr(method='spearman')
+    kendall = encoded.corr(method ='kendall')['class'].to_frame()
+    pearson = encoded.corr(method ='pearson')['class'].to_frame()
+    spearman = encoded.corr(method ='spearman')['class'].to_frame()
+    kendall.columns = ['kendall']
+    pearson.columns = ['pearson']
+    spearman.columns = ['spearman']
 
-    with open(os.path.join(result_path, 'join.csv'), "a") as out:
-        out.write(join.to_csv())
+    correlation_matrix = pd.concat([kendall, pearson, spearman], axis=1, sort=False)
 
-    with open(os.path.join(result_path, 'kendall.csv'), "a") as out:
-        out.write(kendall.to_csv())
-
-    with open(os.path.join(result_path, 'pearson.csv'), "a") as out:
-        out.write(pearson.to_csv())
-
-    with open(os.path.join(result_path, 'spearman.csv'), "a") as out:
-        out.write(spearman.to_csv())
-
-    X, y = encoded.drop(columns=["class"]), encoded["class"]
+    X, y = encoded.drop(columns = ["class"]), encoded["class"]
     visualizer = FeatureCorrelation(method='mutual_info-classification', labels=X.columns)
-    visualizer.fit(X, y, random_state=0)
-    mutual_info_classification = visualizer.scores_
-    visualizer.show(outpath=os.path.join(result_path, "featureCorrelation.png"))
+    visualizer.fit(X, y, random_state = 0)
 
-    estimator = SVR(kernel="linear")
-    selector = RFE(estimator, step=1, n_features_to_select=1)
-    selector = selector.fit(X, y)
-    rfe_coefficient = selector. estimator_.coef_
-    print(list(X.columns))
-    print(selector.ranking_)
-    print(rfe_coefficient)
+    correlation_matrix = correlation_matrix.drop("class", axis = 0)
+    correlation_matrix['mutual_info-classification'] = visualizer.scores_.tolist()
 
-    with open(os.path.join(result_path, 'correlation_matrix.csv'), "a") as out:
-        out.write(",kendall,pearson,spearman,mutual_info_classification\n")
-        out.write("dataset," + str(kendall["dataset"]["class"]) + "," + str(pearson["dataset"]["class"]) + "," + str(spearman["dataset"]["class"]) + "," +
-                  str(mutual_info_classification[0]) + "\n")
-        out.write("algorithm," + str(kendall["algorithm"]["class"]) + "," + str(pearson["algorithm"]["class"]) + "," + str(spearman["algorithm"]["class"]) + "," +
-                  str(mutual_info_classification[1]))
+    return correlation_matrix
+
+def save_correlation_matrix(result_path, correlation_matrix):
+    with open(os.path.join(result_path, 'correlation_matrix.csv'), "w") as out:
+        out.write(correlation_matrix.to_csv())
 
 
 def main():
@@ -437,8 +429,13 @@ def main():
     grouped_by_algorithm_results, grouped_by_dataset_result, summary = aggregate_results(
         filtered_datasets, results, grouped_by_algorithm_results, result_path, pipeline)
     write_summary(result_path, grouped_by_algorithm_results, summary, pipeline)
-    create_num_equal_elements_matrix(result_path, grouped_by_dataset_result)
-    create_correlation_matrix(result_path, filtered_datasets, grouped_by_dataset_result)
+
+    print(grouped_by_dataset_result)
+    num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
+    save_num_equal_elements_matrix(result_path, num_equal_elements_matrix)
+
+    correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result)
+    save_correlation_matrix(result_path, correlation_matrix)
 
 main()
 
