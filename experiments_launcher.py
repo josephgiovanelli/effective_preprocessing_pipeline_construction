@@ -127,10 +127,11 @@ with tqdm(total=total_runtime) as pbar:
         with open(os.path.join(RESULT_PATH, '{}_stdout.txt'.format(base_scenario)), "a") as log_out:
             with open(os.path.join(RESULT_PATH, '{}_stderr.txt'.format(base_scenario)), "a") as log_err:
                 try:
+                    max_time = 420
                     process = subprocess.Popen(cmd, shell=True, stdout=log_out, stderr=log_err)
-                    process.wait(timeout=210)
+                    process.wait(timeout = max_time)
                 except:
                     kill(process.pid)
-                    print("___________________________________________________"+ RESULT_PATH + " does not finish in 210s" )
+                    print("\n\n"+ base_scenario + " does not finish in " + str(max_time) + "\n\n" )
 
         pbar.update(info['runtime'])

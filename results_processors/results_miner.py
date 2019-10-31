@@ -1,46 +1,13 @@
-from __future__ import print_function
-from yellowbrick.target import FeatureCorrelation
-from os import listdir
-from os.path import isfile, join
-from sklearn.preprocessing import OrdinalEncoder
-from scipy import stats as s
-
-
-import argparse
 import collections
 import os
 import json
 
 import pandas as pd
-import numpy as np
 
-algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors', 'SVM', 'NeuralNet']
-benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307,
-                       300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501,
-                       1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
-                       40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
-                       40670, 40701]
+from os import listdir
+from os.path import isfile, join
 
-def merge_dict(dict1, dict2):
-    """ Merge dictionaries and keep values of common keys in list"""
-    dict3 = {**dict2, **dict1}
-    for key, value in dict3.items():
-        if key in dict2 and key in dict1:
-            dict3[key] = [value, dict2[key]]
-
-    return dict3
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Automated Machine Learning Workflow creation and configuration")
-    parser.add_argument("-p", "--pipeline", nargs="+", type=str, required=True, help="step of the pipeline to execute")
-    parser.add_argument("-i", "--first_input", nargs="?", type=str, required=True, help="path of second input")
-    parser.add_argument("-ii", "--second_input", nargs="?", type=str, required=True, help="path of second input")
-    parser.add_argument("-o", "--output", nargs="?", type=str, required=True, help="path where put the results")
-    args = parser.parse_args()
-    input_paths = [args.first_input, args.second_input]
-    result_path = args.output
-    pipeline = args.pipeline
-    return input_paths, result_path, pipeline
+from commons import benchmark_suite, algorithms
 
 def create_possible_categories(pipeline):
     first = pipeline[0][0].upper()
@@ -73,6 +40,15 @@ def get_filtered_datasets():
     df = df.loc[df['NumberOfInstances'] * df['NumberOfFeatures'] < 5000000]
     df = df['did']
     return df.values.flatten().tolist()
+
+def merge_dict(dict1, dict2):
+    """ Merge dictionaries and keep values of common keys in list"""
+    dict3 = {**dict2, **dict1}
+    for key, value in dict3.items():
+        if key in dict2 and key in dict1:
+            dict3[key] = [value, dict2[key]]
+
+    return dict3
 
 def load_results(input_paths, filtered_datasets):
     comparison = {}
@@ -108,7 +84,7 @@ def load_results(input_paths, filtered_datasets):
     return collections.OrderedDict(sorted(merge_dict(comparison[input_paths[0]], comparison[input_paths[1]]).items()))
 
 
-def write_simple_results(result_path, simple_results, filtered_datasets):
+def save_simple_results(result_path, simple_results, filtered_datasets):
     for algorithm in algorithms:
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
         if os.path.exists('{}.csv'.format(acronym)):
@@ -308,14 +284,12 @@ def aggregate_results(simple_results, pipeline, categories):
 
     return grouped_by_algorithm_results, grouped_by_dataset_result
 
-def create_summary(grouped_by_algorithm_results, categories):
+def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories):
     summary = {}
     for _, category in categories.items():
         summary[category] = sum(x[category] for x in grouped_by_algorithm_results.values())
-    return summary
 
-def write_summary(result_path, grouped_by_algorithm_results, summary):
-    with open(os.path.join(result_path, 'results.csv'), "w") as out:
+    with open(os.path.join(result_path, 'grouped_by_algorithm_results.csv'), "w") as out:
         out.write(',' + ','.join(summary.keys()) + '\n')
         for key, value in grouped_by_algorithm_results.items():
             row = key
@@ -327,127 +301,3 @@ def write_summary(result_path, grouped_by_algorithm_results, summary):
         for key, value in summary.items():
             row += "," + str(value)
         out.write(row)
-
-def max_frequency(list):
-    counter = 0
-    num = list[0]
-
-    for i in list:
-        curr_frequency = list.count(i)
-        if curr_frequency > counter:
-            counter = curr_frequency
-            num = i
-
-    return num, counter
-
-def create_num_equal_elements_matrix(grouped_by_dataset_result):
-    num_equal_elements_matrix = np.zeros((5, 5))
-
-    for dataset, value in grouped_by_dataset_result.items():
-        list_values = []
-        for _, label in value.items():
-            if label != 'inconsistent' and label != 'not_exec' and label != 'not_exec_once':
-                list_values.append(label)
-        if list_values:
-            _, freq = max_frequency(list_values)
-            num_equal_elements_matrix[len(list_values) - 1][freq - 1] += 1
-
-    return num_equal_elements_matrix
-
-def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
-    with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), "w") as out:
-        out.write("length,1,2,3,4,5,tot\n")
-        for i in range(0, np.size(num_equal_elements_matrix, 0)):
-            row = str(i + 1)
-            sum = 0
-            for j in range(0, np.size(num_equal_elements_matrix, 1)):
-                value = int(num_equal_elements_matrix[i][j])
-                sum += value
-                row += "," + str(value)
-            row += "," + str(sum) + "\n"
-            out.write(row)
-
-
-def create_hamming_matrix(X, y):
-    def hamming_distance(s1, s2):
-        assert len(s1) == len(s2)
-        return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
-    hamming_matrix = np.zeros((5, 5))
-    value = np.zeros(5)
-    value[X[0][1]] = y[0] + 1
-    for i in range(1, np.size(X, 0)):
-        if X[i][0] == X[i-1][0]:
-            value[X[i][1]] = y[i] + 1
-        else:
-            most_frequent = int(s.mode([x for x in value if x != 0])[0])
-            weight = list(value).count(0)
-            ideal = np.zeros(5)
-            for j in range(0, np.size(value, 0)):
-                if value[j] != 0:
-                    ideal[j] = most_frequent
-            hamming_matrix[weight][hamming_distance(value, ideal)] += 1
-
-            value = np.zeros(5)
-            value[X[i][1]] = y[i] + 1
-    return hamming_matrix
-
-
-
-def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result):
-    data = []
-    for dataset, value in grouped_by_dataset_result.items():
-        for algorithm, result in value.items():
-            data.append([dataset, algorithm, result])
-
-    df = pd.DataFrame(data)
-    df.columns = ['dataset', 'algorithm', 'class']
-
-    meta = pd.read_csv("../openml/meta-features.csv")
-    meta = meta.loc[meta['did'].isin(filtered_datasets)]
-
-    join = pd.merge(df.astype(str), meta.astype(str), left_on="dataset", right_on="did")
-    join = join.drop(columns=["version", "status", "format", "uploader", "did", "row"])
-    encoded = pd.DataFrame(OrdinalEncoder().fit_transform(join), columns=join.columns)
-
-    kendall = encoded.corr(method ='kendall')['class'].to_frame()
-    pearson = encoded.corr(method ='pearson')['class'].to_frame()
-    spearman = encoded.corr(method ='spearman')['class'].to_frame()
-    kendall.columns = ['kendall']
-    pearson.columns = ['pearson']
-    spearman.columns = ['spearman']
-
-    correlation_matrix = pd.concat([kendall, pearson, spearman], axis=1, sort=False)
-
-    X, y = encoded.drop(columns = ["class"]), encoded["class"]
-    visualizer = FeatureCorrelation(method='mutual_info-classification', labels=X.columns)
-    visualizer.fit(X, y, random_state = 0)
-
-    correlation_matrix = correlation_matrix.drop("class", axis = 0)
-    correlation_matrix['mutual_info-classification'] = visualizer.scores_.tolist()
-
-    return correlation_matrix
-
-def save_correlation_matrix(result_path, correlation_matrix):
-    with open(os.path.join(result_path, 'correlation_matrix.csv'), "w") as out:
-        out.write(correlation_matrix.to_csv())
-
-def main():
-    input_paths, result_path, pipeline = parse_args()
-    categories = create_possible_categories(pipeline)
-
-    filtered_datasets = get_filtered_datasets()
-
-    simple_results = load_results(input_paths, filtered_datasets)
-    write_simple_results(result_path, simple_results, filtered_datasets)
-
-    grouped_by_algorithm_results, grouped_by_dataset_result = aggregate_results(simple_results, pipeline, categories)
-    summary = create_summary(grouped_by_algorithm_results, categories)
-    write_summary(result_path, grouped_by_algorithm_results, summary)
-
-    num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
-    save_num_equal_elements_matrix(result_path, num_equal_elements_matrix)
-
-    correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result)
-    save_correlation_matrix(result_path, correlation_matrix)
-
-main()
