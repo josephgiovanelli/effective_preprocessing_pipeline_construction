@@ -11,17 +11,25 @@ import pandas as pd
 from commons import algorithms
 
 
-def max_frequency(list):
+def max_frequency(x):
     counter = 0
-    num = list[0]
+    num = x[0]
 
-    for i in list:
-        curr_frequency = list.count(i)
+    for i in x:
+        curr_frequency = x.count(i)
         if curr_frequency > counter:
             counter = curr_frequency
             num = i
 
     return num, counter
+
+def same_frequency(x, num, frequency):
+    for i in list(filter(lambda a: a != num, x)):
+        curr_frequency = x.count(i)
+        if curr_frequency == frequency:
+            return True
+    return False
+
 
 def create_num_equal_elements_matrix(grouped_by_dataset_result):
     num_equal_elements_matrix = np.zeros((len(algorithms), len(algorithms)))
@@ -85,8 +93,6 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
                     data.append([dataset, algorithm, 1 if result == categories['first_second'] or result == categories['second_first'] else 0])
                 else:
                     data.append([dataset, algorithm, result])
-
-
 
     df = pd.DataFrame(data)
     df.columns = ['dataset', 'algorithm', 'class']

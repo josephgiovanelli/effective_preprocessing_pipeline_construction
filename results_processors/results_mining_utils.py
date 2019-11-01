@@ -8,7 +8,7 @@ from os import listdir
 from os.path import isfile, join
 
 from commons import benchmark_suite, algorithms
-from results_processors.correlation_utils import max_frequency
+from results_processors.correlation_utils import max_frequency, same_frequency
 
 
 def create_possible_categories(pipeline):
@@ -288,51 +288,71 @@ def aggregate_results(simple_results, pipeline, categories):
 
     return grouped_by_algorithm_results, grouped_by_dataset_result
 
-def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories):
+def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories, no_algorithms = False):
     summary = {}
     for _, category in categories.items():
         summary[category] = sum(x[category] for x in grouped_by_algorithm_results.values())
 
-    with open(os.path.join(result_path, 'grouped_by_algorithm_results.csv'), "w") as out:
+    with open(os.path.join(result_path, 'summary.csv'), "w") as out:
         out.write(',' + ','.join(summary.keys()) + '\n')
-        for key, value in grouped_by_algorithm_results.items():
-            row = key
-            for k, v in value.items():
-                row += "," + str(v)
-            row += "\n"
-            out.write(row)
+        if not(no_algorithms):
+            for key, value in grouped_by_algorithm_results.items():
+                row = key
+                for k, v in value.items():
+                    row += "," + str(v)
+                row += "\n"
+                out.write(row)
         row = "summary"
         for key, value in summary.items():
             row += "," + str(value)
         out.write(row)
 
-def merge_runs_by_dataset(grouped_by_dataset_result):
+def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms = False):
+    def compute_result(results):
+        max_frequent_result, frequency = max_frequency(results)
+        if same_frequency(results, max_frequent_result, frequency):
+            final_result = 'no_majority'
+        else:
+            final_result = max_frequent_result
+        return final_result, max_frequent_result, frequency
+
     details_grouped_by_dataset_result = merge_dict(grouped_by_dataset_result)
     new_grouped_by_dataset_result ={}
+
 
     for dataset, value in details_grouped_by_dataset_result.items():
         algorithms_dict = merge_dict(value)
         new_grouped_by_dataset_result[dataset] = {}
+        details_grouped_by_dataset_result[dataset] = {}
 
-        for algorithm, results in algorithms_dict.items():
-            max_frequent_result, frequency = max_frequency(results)
-            if frequency == 1:
-                final_result = 'no_majority'
-            else:
-                final_result = max_frequent_result
-            algorithms_dict[algorithm] = {'results': results, 'final_result': final_result,
-                                          'max_frequent_result': max_frequent_result, 'frequency': frequency}
+        if no_algorithms:
+            results = [item for sublist in list(algorithms_dict.values()) for item in sublist]
+            final_result, max_frequent_result, frequency = compute_result(results)
+            details_grouped_by_dataset_result[dataset]["result"] = {'results': results, 'final_result': final_result,
+                                              'max_frequent_result': max_frequent_result, 'frequency': frequency}
+            new_grouped_by_dataset_result[dataset]['result'] = final_result
+        else:
+            for algorithm, results in algorithms_dict.items():
+                final_result, max_frequent_result, frequency = compute_result(results)
 
-            new_grouped_by_dataset_result[dataset][algorithm] = final_result
+                algorithms_dict[algorithm] = {'results': results, 'final_result': final_result,
+                                              'max_frequent_result': max_frequent_result, 'frequency': frequency}
 
-        details_grouped_by_dataset_result[dataset] = algorithms_dict
+                new_grouped_by_dataset_result[dataset][algorithm] = final_result
+
+            details_grouped_by_dataset_result[dataset] = algorithms_dict
 
     return details_grouped_by_dataset_result, new_grouped_by_dataset_result
 
-def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result):
-    for algorithm in algorithms:
+def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result, no_algorithms = False):
+    if no_algorithms:
+        mylist = ['RESULT']
+    else:
+        mylist = algorithms
+
+    for element in mylist:
         header = False
-        acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+        acronym = ''.join([a for a in element if a.isupper()]).lower()
 
         with open(os.path.join(result_path, '{}.csv'.format(acronym)), "w") as out:
 
@@ -346,11 +366,15 @@ def save_details_grouped_by_dataset_result(result_path, details_grouped_by_datas
                                                  .replace('\'', '') for elem in detail_results[acronym].values()))
                 out.write(dataset + ',' + results + '\n')
 
-def grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories):
+def grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories, no_algorithms = False):
     grouped_by_algorithm_results = {}
+    if no_algorithms:
+        mylist = ['RESULT']
+    else:
+        mylist = algorithms
 
-    for algorithm in algorithms:
-        acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+    for element in mylist:
+        acronym = ''.join([a for a in element if a.isupper()]).lower()
         grouped_by_algorithm_results[acronym] = {}
         for _, category in categories.items():
             grouped_by_algorithm_results[acronym][category] = 0
