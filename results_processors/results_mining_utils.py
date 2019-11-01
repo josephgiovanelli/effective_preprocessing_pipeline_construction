@@ -8,6 +8,8 @@ from os import listdir
 from os.path import isfile, join
 
 from commons import benchmark_suite, algorithms
+from results_processors.correlation_utils import max_frequency
+
 
 def create_possible_categories(pipeline):
     first = pipeline[0][0].upper()
@@ -303,3 +305,63 @@ def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results,
         for key, value in summary.items():
             row += "," + str(value)
         out.write(row)
+
+def merge_runs_by_dataset(grouped_by_dataset_result):
+    details_grouped_by_dataset_result = merge_dict(grouped_by_dataset_result)
+    new_grouped_by_dataset_result ={}
+
+    for dataset, value in details_grouped_by_dataset_result.items():
+        algorithms_dict = merge_dict(value)
+        new_grouped_by_dataset_result[dataset] = {}
+
+        for algorithm, results in algorithms_dict.items():
+            max_frequent_result, frequency = max_frequency(results)
+            if frequency == 1:
+                final_result = 'no_majority'
+            else:
+                final_result = max_frequent_result
+            algorithms_dict[algorithm] = {'results': results, 'final_result': final_result,
+                                          'max_frequent_result': max_frequent_result, 'frequency': frequency}
+
+            new_grouped_by_dataset_result[dataset][algorithm] = final_result
+
+        details_grouped_by_dataset_result[dataset] = algorithms_dict
+
+    return details_grouped_by_dataset_result, new_grouped_by_dataset_result
+
+def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result):
+    for algorithm in algorithms:
+        header = False
+        acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+
+        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "w") as out:
+
+            for dataset, detail_results in details_grouped_by_dataset_result.items():
+                if not(header):
+                    out.write(',' + ','.join(detail_results[acronym].keys()) + '\n')
+                    header = True
+                results = ','.join(list(str(elem).replace(',', '')
+                                                 .replace('[', '')
+                                                 .replace(']', '')
+                                                 .replace('\'', '') for elem in detail_results[acronym].values()))
+                out.write(dataset + ',' + results + '\n')
+
+def grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories):
+    grouped_by_algorithm_results = {}
+
+    for algorithm in algorithms:
+        acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+        grouped_by_algorithm_results[acronym] = {}
+        for _, category in categories.items():
+            grouped_by_algorithm_results[acronym][category] = 0
+
+    for _, result in grouped_by_dataset_result.items():
+        for acronym, category in result.items():
+            grouped_by_algorithm_results[acronym][category] += 1
+
+    return grouped_by_algorithm_results
+
+
+
+
+

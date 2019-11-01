@@ -8,6 +8,8 @@ import os
 import numpy as np
 import pandas as pd
 
+from commons import algorithms
+
 
 def max_frequency(list):
     counter = 0
@@ -22,12 +24,12 @@ def max_frequency(list):
     return num, counter
 
 def create_num_equal_elements_matrix(grouped_by_dataset_result):
-    num_equal_elements_matrix = np.zeros((5, 5))
+    num_equal_elements_matrix = np.zeros((len(algorithms), len(algorithms)))
 
     for dataset, value in grouped_by_dataset_result.items():
         list_values = []
         for _, label in value.items():
-            if label != 'inconsistent' and label != 'not_exec' and label != 'not_exec_once':
+            if label != 'inconsistent' and label != 'not_exec' and label != 'not_exec_once' and label != 'no_majority':
                 list_values.append(label)
         if list_values:
             _, freq = max_frequency(list_values)
@@ -37,7 +39,7 @@ def create_num_equal_elements_matrix(grouped_by_dataset_result):
 
 def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
     with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), "w") as out:
-        out.write("length,1,2,3,4,5,tot\n")
+        out.write("length," + ",".join(str(i) for i in range(1, len(algorithms) + 1)) + ",tot\n")
         for i in range(0, np.size(num_equal_elements_matrix, 0)):
             row = str(i + 1)
             sum = 0
@@ -53,8 +55,8 @@ def create_hamming_matrix(X, y):
     def hamming_distance(s1, s2):
         assert len(s1) == len(s2)
         return sum(ch1 != ch2 for ch1, ch2 in zip(s1, s2))
-    hamming_matrix = np.zeros((5, 5))
-    value = np.zeros(5)
+    hamming_matrix = np.zeros((len(algorithms), len(algorithms)))
+    value = np.zeros(len(algorithms))
     value[X[0][1]] = y[0] + 1
     for i in range(1, np.size(X, 0)):
         if X[i][0] == X[i-1][0]:
@@ -62,7 +64,7 @@ def create_hamming_matrix(X, y):
         else:
             most_frequent = int(s.mode([x for x in value if x != 0])[0])
             weight = list(value).count(0)
-            ideal = np.zeros(5)
+            ideal = np.zeros(len(algorithms))
             for j in range(0, np.size(value, 0)):
                 if value[j] != 0:
                     ideal[j] = most_frequent
@@ -74,13 +76,12 @@ def create_hamming_matrix(X, y):
 
 
 
-def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, considerate_just_order):
+def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order):
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
-            if result != "inconsistent" and result != "not_exec" and result != "not_exec_once":
-
-                if considerate_just_order:
+            if result != "inconsistent" and result != "not_exec" and result != "not_exec_once" and result != "no_majority":
+                if consider_just_the_order:
                     data.append([dataset, algorithm, 1 if result == categories['first_second'] or result == categories['second_first'] else 0])
                 else:
                     data.append([dataset, algorithm, result])

@@ -7,7 +7,8 @@ import os
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
-    aggregate_results, save_simple_results, save_grouped_by_algorithm_results, merge_dict
+    aggregate_results, save_simple_results, save_grouped_by_algorithm_results, merge_dict, merge_runs_by_dataset, \
+    save_details_grouped_by_dataset_result, grouped_by_dataset_to_grouped_by_algorithm
 
 
 def parse_args():
@@ -36,7 +37,23 @@ def main():
         grouped_by_algorithm_results.append(temp_grouped_by_algorithm_results)
         grouped_by_dataset_result.append(temp_grouped_by_dataset_result)
 
-    merged_dict = merge_dict(grouped_by_dataset_result)
-    print(merged_dict)
+    result_path = os.path.join(result_path, 'majority_considering_algorithms')
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+
+    categories['no_majority'] = 'no_majority'
+
+    details_grouped_by_dataset_result, grouped_by_dataset_result = merge_runs_by_dataset(grouped_by_dataset_result)
+    save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result)
+
+    grouped_by_algorithm_results = grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories)
+    save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories)
+
+    num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
+    save_num_equal_elements_matrix(result_path, num_equal_elements_matrix)
+
+    correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories,
+                                                   consider_just_the_order=True)
+    save_correlation_matrix(result_path, correlation_matrix)
 
 main()
