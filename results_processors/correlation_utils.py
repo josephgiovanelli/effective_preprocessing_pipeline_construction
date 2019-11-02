@@ -122,6 +122,6 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
 
     return correlation_matrix
 
-def save_correlation_matrix(result_path, correlation_matrix):
-    with open(os.path.join(result_path, 'correlation_matrix.csv'), "w") as out:
+def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
+    with open(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), "w") as out:
         out.write(correlation_matrix.to_csv())

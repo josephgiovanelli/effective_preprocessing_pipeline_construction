@@ -33,8 +33,9 @@ def main():
     num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
     save_num_equal_elements_matrix(result_path, num_equal_elements_matrix)
 
-    correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories,
-                                                   consider_just_the_order= False)
-    save_correlation_matrix(result_path, correlation_matrix)
+    for consider_just_the_order in [True, False]:
+        correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order)
+        save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order)
+
 
 main()
