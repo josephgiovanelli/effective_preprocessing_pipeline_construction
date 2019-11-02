@@ -7,8 +7,7 @@ import os
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
-    save_grouped_by_algorithm_results, grouped_by_dataset_to_grouped_by_algorithm, merge_dict, save_simple_results, \
-    aggregate_results, compose_pipeline, check_validity, compute_result
+    save_grouped_by_algorithm_results, grouped_by_dataset_to_grouped_by_algorithm, merge_dict, save_simple_results, aggregate_results, compose_pipeline
 
 
 def str2bool(v):
@@ -33,9 +32,9 @@ def parse_args():
 
 def adapt_environment(result_path, no_algorithms):
     if no_algorithms:
-        result_path = os.path.join(result_path, '4_majority_no_considering_algorithms')
+        result_path = os.path.join(result_path, '5_majority_no_considering_algorithms')
     else:
-        result_path = os.path.join(result_path, '4_majority_considering_algorithms')
+        result_path = os.path.join(result_path, '5_majority_considering_algorithms')
 
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -73,12 +72,55 @@ def get_best_results_over_more_algorithms(simple_results):
 
     return get_best_results_over_more_runs(grouped_by_dataset_result)
 
-def calculate_results(simple_results, pipeline, categories):
+def check_validity(pipelines):
+    if pipelines["pipeline1"] == [] and pipelines["pipeline2"] == []:
+        return False, 'not_exec'
+    elif pipelines["pipeline1"] == [] or pipelines["pipeline2"] == []:
+        return False, 'not_exec_once'
+    return True, ''
+
+def compute_result(result, pipeline, categories):
+    if pipeline[0] == 'NoneType' and pipeline[1] == 'NoneType':
+        return categories['baseline']
+    elif pipeline[0] != 'NoneType' and pipeline[1] == 'NoneType':
+        return categories['first']
+    elif pipeline[0] == 'NoneType' and pipeline[1] != 'NoneType':
+        return categories['second']
+    elif pipeline[0] != 'NoneType' and pipeline[1] != 'NoneType':
+        if result == 1:
+            return categories['first_second']
+        else:
+            return categories['second_first']
+
+def compute_result_in_case_of_draw(pipelines, categories):
+    if pipelines["pipeline1"][0] != 'NoneType' and pipelines["pipeline1"][1] != 'NoneType' and pipelines["pipeline2"][0] != 'NoneType' and pipelines["pipeline2"][1] != 'NoneType':
+        return categories['draw']
+    elif (pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline1"][1] == 'NoneType') or (pipelines["pipeline2"][0] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType'):
+        return categories['baseline']
+    elif (pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline1"][1] != 'NoneType' and
+          pipelines["pipeline2"][0] != 'NoneType' and pipelines["pipeline2"][1] == 'NoneType') \
+          or \
+         (pipelines["pipeline1"][0] != 'NoneType' and pipelines["pipeline1"][1] == 'NoneType' and
+          pipelines["pipeline2"][0] == 'NoneType' and pipelines["pipeline2"][1] != 'NoneType'):
+        return categories['first_or_second']
+    elif pipelines["pipeline1"][0] != 'NoneType' and pipelines["pipeline2"][0] != 'NoneType':
+        return categories['first']
+    elif pipelines["pipeline1"][1] != 'NoneType' and pipelines["pipeline2"][1] != 'NoneType':
+        return categories['second']
+    ValueError('A very bad thing happened.')
+
+
+def calculate_results(simple_results, pipeline, categories, no_algorithms):
     grouped_by_dataset_result = {}
     grouped_by_algorithm_results = {}
-    acronym = 'noalgorithm'
 
-    for dataset, value in simple_results.items():
+    for key, value in simple_results.items():
+        if not no_algorithms:
+            acronym = key.split("_")[0]
+            dataset = key.split("_")[1]
+        else:
+            dataset = key
+            acronym = 'noalgorithm'
 
         pipelines = compose_pipeline(value[0]['pipeline'], value[1]['pipeline'], pipeline)
         result = -1
@@ -91,27 +133,31 @@ def calculate_results(simple_results, pipeline, categories):
         if result == -1:
             raise ValueError('A very bad thing happened.')
 
-        validity, problem = check_validity(pipelines, result)
+        validity, problem = check_validity(pipelines)
 
         if not(grouped_by_dataset_result.__contains__(dataset)):
             grouped_by_dataset_result[dataset] = {}
 
-        if not(grouped_by_algorithm_results.__contains__(acronym)):
-            grouped_by_algorithm_results[acronym] = {}
-            for _, category in categories.items():
-                grouped_by_algorithm_results[acronym][category] = 0
+        if not no_algorithms:
+            if not(grouped_by_algorithm_results.__contains__(acronym)):
+                grouped_by_algorithm_results[acronym] = {}
+                for _, category in categories.items():
+                    grouped_by_algorithm_results[acronym][category] = 0
 
         if validity:
-            grouped_by_algorithm_results, grouped_by_dataset_result = compute_result(
-                result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, categories,
-                [value[0]['baseline_score'], value[1]['baseline_score']], [value[0]['accuracy'], value[1]['accuracy']])
+            if result != 0:
+                label = compute_result(result, pipelines["pipeline" + str(result)], categories)
+            else:
+                label = compute_result_in_case_of_draw(pipelines, categories)
         else:
-            grouped_by_dataset_result[dataset][acronym] = {'result': categories[problem], 'accuracy': value[result - 1 if result != 0 else result]['accuracy']}
+            label = problem
 
-    for dataset, value in grouped_by_dataset_result.items():
-        for algorithm, v in value.items():
-            grouped_by_dataset_result[dataset][algorithm] = v['result']
-    return grouped_by_dataset_result
+        grouped_by_dataset_result[dataset][acronym] = label
+
+        if not no_algorithms:
+            grouped_by_algorithm_results[acronym][label] += 1
+
+    return grouped_by_algorithm_results, grouped_by_dataset_result
 
 
 
@@ -133,7 +179,7 @@ def main():
     if not no_algorithms:
         save_simple_results(result_path, simple_results, filtered_datasets)
 
-        grouped_by_algorithm_results, grouped_by_dataset_result = aggregate_results(simple_results, pipeline, categories)
+        grouped_by_algorithm_results, grouped_by_dataset_result = calculate_results(simple_results, pipeline, categories, no_algorithms)
         save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories)
 
         num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
@@ -144,7 +190,7 @@ def main():
             save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order)
     else:
         grouped_by_dataset_result = get_best_results_over_more_algorithms(simple_results)
-        grouped_by_dataset_result = calculate_results(grouped_by_dataset_result, pipeline, categories)
+        _, grouped_by_dataset_result = calculate_results(grouped_by_dataset_result, pipeline, categories, no_algorithms)
 
         grouped_by_algorithm_results = grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories, no_algorithms)
         save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories, no_algorithms)
