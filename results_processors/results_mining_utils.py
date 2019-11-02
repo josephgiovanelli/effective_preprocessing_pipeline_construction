@@ -328,9 +328,9 @@ def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms = False):
         if no_algorithms:
             results = [item for sublist in list(algorithms_dict.values()) for item in sublist]
             final_result, max_frequent_result, frequency = compute_result(results)
-            details_grouped_by_dataset_result[dataset]["result"] = {'results': results, 'final_result': final_result,
+            details_grouped_by_dataset_result[dataset]["noalgorithm"] = {'results': results, 'final_result': final_result,
                                               'max_frequent_result': max_frequent_result, 'frequency': frequency}
-            new_grouped_by_dataset_result[dataset]['result'] = final_result
+            new_grouped_by_dataset_result[dataset]['noalgorithm'] = final_result
         else:
             for algorithm, results in algorithms_dict.items():
                 final_result, max_frequent_result, frequency = compute_result(results)
@@ -346,7 +346,7 @@ def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms = False):
 
 def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result, no_algorithms = False):
     if no_algorithms:
-        mylist = ['RESULT']
+        mylist = ['NOALGORITHM']
     else:
         mylist = algorithms
 
@@ -369,7 +369,7 @@ def save_details_grouped_by_dataset_result(result_path, details_grouped_by_datas
 def grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories, no_algorithms = False):
     grouped_by_algorithm_results = {}
     if no_algorithms:
-        mylist = ['RESULT']
+        mylist = ['NOALGORITHM']
     else:
         mylist = algorithms
 

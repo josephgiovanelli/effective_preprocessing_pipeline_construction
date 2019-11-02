@@ -90,7 +90,7 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
         for algorithm, result in value.items():
             if result != "inconsistent" and result != "not_exec" and result != "no_majority":
                 if consider_just_the_order:
-                    data.append([dataset, algorithm, 1 if result == categories['first_second'] or result == categories['second_first'] or result == "not_exec_once" else 0])
+                    data.append([dataset, algorithm, "order" if result == categories['first_second'] or result == categories['second_first'] or result == "not_exec_once" else "no_order"])
                 else:
                     data.append([dataset, algorithm, result])
 
