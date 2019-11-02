@@ -93,7 +93,7 @@ def save_simple_results(result_path, simple_results, filtered_datasets):
         acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
         if os.path.exists('{}.csv'.format(acronym)):
             os.remove('{}.csv'.format(acronym))
-        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "a") as out:
+        with open(os.path.join(result_path, '{}.csv'.format(acronym)), "w") as out:
             out.write("dataset,name,dimensions,conf1,pipeline1,num_iterations1,best_iteration1,conf2,pipeline2,"
                       "num_iterations2,best_iteration2\n")
 
