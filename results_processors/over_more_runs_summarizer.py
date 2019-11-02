@@ -33,9 +33,9 @@ def parse_args():
 
 def adapt_environment(result_path, categories, no_algorithms):
     if no_algorithms:
-        result_path = os.path.join(result_path, '2_majority_no_considering_algorithms')
+        result_path = os.path.join(result_path, '3_majority_no_considering_algorithms')
     else:
-        result_path = os.path.join(result_path, '2_majority_considering_algorithms')
+        result_path = os.path.join(result_path, '3_majority_considering_algorithms')
 
     if not os.path.exists(result_path):
         os.makedirs(result_path)

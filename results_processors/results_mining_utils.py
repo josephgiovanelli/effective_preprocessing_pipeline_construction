@@ -307,21 +307,36 @@ def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results,
             row += "," + str(value)
         out.write(row)
 
-def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms = False):
-    def compute_result(results):
-        original_length = len(results)
-        results = [r['result'] for r in results if r['result'] != 'inconsistent']
-        if results == []:
-            return 'inconsistent', 'inconsistent', original_length
-        max_frequent_result, frequency = max_frequency(results)
-        if same_frequency(results, max_frequent_result, frequency):
-            final_result = 'no_majority'
-        else:
-            final_result = max_frequent_result
-        return final_result, max_frequent_result, frequency
+
+def element_with_best_accuracy(results):
+    indexed_results = []
+    for r in results:
+        indexed_results.append([r['accuracy'], r['result']])
+    max = indexed_results[0][0]
+    index = 0
+    for i in range(1, len(indexed_results)):
+        if indexed_results[i][0] > max:
+            max = indexed_results[i][0]
+            index = i
+    return indexed_results[index][1]
+
+def find_best_result(results):
+    original_length = len(results)
+    new_results = [r['result'] for r in results if r['result'] != 'inconsistent']
+    if new_results == []:
+        return 'inconsistent', 'inconsistent', original_length
+    max_frequent_result, frequency = max_frequency(new_results)
+    if same_frequency(new_results, max_frequent_result, frequency):
+        results = [r for r in results if r['result'] != 'inconsistent']
+        final_result = element_with_best_accuracy(results)
+    else:
+        final_result = max_frequent_result
+    return final_result, max_frequent_result, frequency
+
+def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms=False):
 
     details_grouped_by_dataset_result = merge_dict(grouped_by_dataset_result)
-    new_grouped_by_dataset_result ={}
+    new_grouped_by_dataset_result = {}
 
 
     for dataset, value in details_grouped_by_dataset_result.items():
@@ -331,13 +346,13 @@ def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms = False):
 
         if no_algorithms:
             results = [item for sublist in list(algorithms_dict.values()) for item in sublist]
-            final_result, max_frequent_result, frequency = compute_result(results)
+            final_result, max_frequent_result, frequency = find_best_result(results)
             details_grouped_by_dataset_result[dataset]["noalgorithm"] = {'results': [r['result'] for r in results], 'final_result': final_result,
                                               'max_frequent_result': max_frequent_result, 'frequency': frequency}
             new_grouped_by_dataset_result[dataset]['noalgorithm'] = final_result
         else:
             for algorithm, results in algorithms_dict.items():
-                final_result, max_frequent_result, frequency = compute_result(results)
+                final_result, max_frequent_result, frequency = find_best_result(results)
                 algorithms_dict[algorithm] = {'results': [r['result'] for r in results], 'final_result': final_result,
                                               'max_frequent_result': max_frequent_result, 'frequency': frequency}
 
