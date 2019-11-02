@@ -250,7 +250,7 @@ def compute_result(result, dataset, acronym, grouped_by_algorithm_results, group
 
     return grouped_by_algorithm_results, grouped_by_dataset_result
 
-def aggregate_results(simple_results, pipeline, categories):
+def aggregate_results(simple_results, pipeline, categories, over_more_runs = False):
     grouped_by_dataset_result = {}
     grouped_by_algorithm_results = {}
 
@@ -286,7 +286,13 @@ def aggregate_results(simple_results, pipeline, categories):
             grouped_by_dataset_result[dataset][acronym] = {'result': categories[problem], 'accuracy': value[result - 1 if result != 0 else result]['accuracy']}
             grouped_by_algorithm_results[acronym][problem] += 1
 
-    return grouped_by_algorithm_results, grouped_by_dataset_result
+    if over_more_runs:
+        return grouped_by_algorithm_results, grouped_by_dataset_result
+    else:
+        for dataset, value in grouped_by_dataset_result.items():
+            for algorithm, v in value.items():
+                grouped_by_dataset_result[dataset][algorithm] = v['result']
+        return grouped_by_algorithm_results, grouped_by_dataset_result
 
 def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories, no_algorithms = False):
     summary = {}

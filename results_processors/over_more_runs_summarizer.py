@@ -56,7 +56,8 @@ def main():
         simple_results = load_results(input, filtered_datasets)
         temp_grouped_by_algorithm_results, temp_grouped_by_dataset_result = aggregate_results(simple_results,
                                                                                                   pipeline,
-                                                                                                  categories)
+                                                                                                  categories,
+                                                                                              over_more_runs=True)
         grouped_by_algorithm_results.append(temp_grouped_by_algorithm_results)
         grouped_by_dataset_result.append(temp_grouped_by_dataset_result)
 
