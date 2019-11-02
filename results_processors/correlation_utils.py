@@ -88,9 +88,9 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
-            if result != "inconsistent" and result != "not_exec" and result != "not_exec_once" and result != "no_majority":
+            if result != "inconsistent" and result != "not_exec" and result != "no_majority":
                 if consider_just_the_order:
-                    data.append([dataset, algorithm, 1 if result == categories['first_second'] or result == categories['second_first'] else 0])
+                    data.append([dataset, algorithm, 1 if result == categories['first_second'] or result == categories['second_first'] or result == "not_exec_once" else 0])
                 else:
                     data.append([dataset, algorithm, result])
 
