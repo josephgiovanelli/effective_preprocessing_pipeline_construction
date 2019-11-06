@@ -294,11 +294,13 @@ def aggregate_results(simple_results, pipeline, categories, over_more_runs = Fal
                 grouped_by_dataset_result[dataset][algorithm] = v['result']
         return grouped_by_algorithm_results, grouped_by_dataset_result
 
-def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, categories, no_algorithms = False):
+def compute_summary(grouped_by_algorithm_results, categories):
     summary = {}
     for _, category in categories.items():
         summary[category] = sum(x[category] for x in grouped_by_algorithm_results.values())
+    return summary
 
+def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary, no_algorithms = False):
     with open(os.path.join(result_path, 'summary.csv'), "w") as out:
         out.write(',' + ','.join(summary.keys()) + '\n')
         if not(no_algorithms):

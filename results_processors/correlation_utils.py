@@ -1,3 +1,4 @@
+from scipy.stats import chi2_contingency, chi2
 from yellowbrick.target import FeatureCorrelation
 from sklearn.preprocessing import OrdinalEncoder
 
@@ -125,3 +126,129 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
 def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
     with open(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), "w") as out:
         out.write(correlation_matrix.to_csv())
+
+def chi2test(observed, uniform_distribution):
+    # comparing with the uniform distribution
+    table = [observed, uniform_distribution]
+    stat, p, dof, expected = chi2_contingency(table)
+    # print(table)
+    # print(expected)
+    # print()
+
+    # interpret test-statistic
+    # stat is high as much as the two distribution are different
+    prob = 0.95
+    critical = chi2.ppf(prob, dof)
+    statistic_test = abs(stat) >= critical
+    # print('probability=%.3f, critical=%.3f, stat=%.3f' % (prob, critical, stat))
+    # if statistic_test:
+    #     print('reject H0 -> No similarity with uniform distribution -> there is a majority -> one of them is more frequent')
+    # else:
+    #     print('fail to reject H0 -> similarity found -> there is NOT a majority -> balanced frequencies')
+    # print()
+
+    # interpret p-value
+    # p is high as much as the two distribution are similar (the frequencies are balanced)
+    alpha = 1.0 - prob
+    p_value = p <= alpha
+    # print('significance=%.3f, p=%.3f' % (alpha, p))
+    # if p_value:
+    #     print('reject H0 -> No similarity with uniform distribution -> there is a majority -> one of them is more frequent')
+    # else:
+    #     print('fail to reject H0 -> similarity found -> there is NOT a majority -> balanced frequencies')
+    # print()
+    return critical // 0.0001 / 10000, stat // 0.0001 / 10000, statistic_test, alpha // 0.0001 / 10000, p, p_value
+
+def chi2tests(grouped_by_algorithm_results, summary, categories):
+    grouped_by_algorithm_results['summary'] = summary
+    test = {}
+    order_test = {}
+    not_order_test = {}
+    for algorithm, values in grouped_by_algorithm_results.items():
+
+        # print('ALGORITHM: ' + algorithm)
+        total = sum(a for a in values.values())
+        not_valid = sum([values[categories['inconsistent']], values[categories['not_exec']], values[categories['not_exec_once']]])
+        valid = total - not_valid
+
+        order = sum([values[categories['first_second']], values[categories['second_first']]])
+        not_order = valid - order
+        uniform_frequency = valid / 2
+        critical, stat, statistic_test, alpha, p, p_value = chi2test([order, not_order],
+                                                                     [uniform_frequency, uniform_frequency])
+
+        test[algorithm] = {'valid': valid,
+                           'order': order,
+                           'not_order': not_order,
+                           'uniform_frequency': uniform_frequency,
+                           'critical': critical,
+                           'stat': stat,
+                           'statistic_test': statistic_test,
+                           'alpha': alpha,
+                           'p': p,
+                           'p_value_test': p_value}
+
+        first_second = values[categories['first_second']]
+        second_first = values[categories['second_first']]
+        uniform_frequency = order / 2
+        critical, stat, statistic_test, alpha, p, p_value = chi2test([first_second, second_first],
+                                                                     [uniform_frequency, uniform_frequency])
+
+        order_test[algorithm] = {'order': order,
+                                 categories['first_second']: first_second,
+                                 categories['second_first']: second_first,
+                                 'uniform_frequency': uniform_frequency,
+                                 'critical': critical,
+                                 'stat': stat,
+                                 'statistic_test': statistic_test,
+                                 'alpha': alpha,
+                                 'p': p,
+                                 'p_value_test': p_value}
+
+        first = values[categories['first']]
+        second = values[categories['second']]
+        first_or_second = values[categories['first_or_second']]
+        draw = values[categories['draw']]
+        baseline = values[categories['baseline']]
+        uniform_frequency = not_order / 5
+        critical, stat, statistic_test, alpha, p, p_value = chi2test([first, second, first_or_second, draw, baseline],
+                                                                     [uniform_frequency, uniform_frequency, uniform_frequency, uniform_frequency, uniform_frequency])
+
+        not_order_test[algorithm] = {'not_order': not_order,
+                                     categories['first']: first,
+                                     categories['second']: second,
+                                     categories['first_or_second']: first_or_second,
+                                     categories['draw']: draw,
+                                     categories['baseline']: baseline,
+                                     'uniform_frequency': uniform_frequency,
+                                     'critical': critical,
+                                     'stat': stat,
+                                     'statistic_test': statistic_test,
+                                     'alpha': alpha,
+                                     'p': p,
+                                     'p_value_test': p_value}
+
+    return test, order_test, not_order_test
+
+
+def save_chi2tests(result_path, test, order_test, not_order_test):
+    def saver(collection, name):
+        with open(name, "w") as out:
+            header = False
+            for algorithm, values in collection.items():
+                if not header:
+                    out.write(',' + ','.join(values.keys()) + '\n')
+                    header = True
+                row = algorithm
+                for _, value in values.items():
+                    row += "," + str(value)
+                row += "\n"
+                out.write(row)
+
+    saver(test, os.path.join(result_path, 'test.csv'))
+    saver(order_test, os.path.join(result_path, 'order_test.csv'))
+    saver(not_order_test, os.path.join(result_path, 'not_order_test.csv'))
+
+
+
+
