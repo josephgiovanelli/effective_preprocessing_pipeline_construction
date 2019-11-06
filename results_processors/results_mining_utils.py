@@ -78,6 +78,7 @@ def load_results(input_path, filtered_datasets):
                     num_iterations = 0
                     best_iteration = 0
                     baseline_score = 0
+
                 comparison[path][acronym] = {}
                 comparison[path][acronym]['accuracy'] = accuracy
                 comparison[path][acronym]['pipeline'] = pipeline
@@ -117,14 +118,19 @@ def save_simple_results(result_path, simple_results, filtered_datasets):
 
 def compose_pipeline(pipeline1, pipeline2, scheme):
     pipelines = {"pipeline1": [], "pipeline2": []}
+    parameters = {"pipeline1": [], "pipeline2": []}
     for step in scheme:
         if pipeline1 != "":
             raw_pipeline1 = json.loads(pipeline1.replace('\'', '\"').replace(" ", ",").replace("True", "1").replace("False", "0"))
             pipelines["pipeline1"].append(raw_pipeline1[step][0].split("_")[1])
+            for param in raw_pipeline1[step][1]:
+                parameters["pipeline1"].append(raw_pipeline1[step][1][param])
         if pipeline2 != "":
             raw_pipeline2 = json.loads(pipeline2.replace('\'', '\"').replace(" ", ",").replace("True", "1").replace("False", "0"))
             pipelines["pipeline2"].append(raw_pipeline2[step][0].split("_")[1])
-    return pipelines
+            for param in raw_pipeline2[step][1]:
+                parameters["pipeline2"].append(raw_pipeline2[step][1][param])
+    return pipelines, parameters
 
 
 def check_validity(pipelines, result):
@@ -147,117 +153,99 @@ def check_validity(pipelines, result):
 
 def compute_result(result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, categories, baseline_scores, scores):
     if baseline_scores[0] != baseline_scores[1]:
-        print('Baselines with different scores')
+        raise Exception('Baselines with different scores')
 
     #case a, b, c, e, i
     if result == 0 and baseline_scores[0] == scores[0]:
-        grouped_by_dataset_result[dataset][acronym] = {'result': 'baseline', 'accuracy': baseline_scores[0]}
-        grouped_by_algorithm_results[acronym]['baseline'] += 1
+        return 'baseline'
     #case d, o
     elif pipelines["pipeline1"].count('NoneType') == 2 or pipelines["pipeline2"].count('NoneType') == 2:
         if pipelines["pipeline1"].count('NoneType') == 2:
             if result == 2:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second_first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
+                return categories['second_first']
             else:
-                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         else:
             if result == 1:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first_second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
+                return categories['first_second']
             else:
-                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case f, m, l, g
     elif pipelines["pipeline1"].count('NoneType') == 1 and pipelines["pipeline2"].count('NoneType') == 1:
         #case f
         if pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second']] += 1
+                return categories['second']
             else:
-                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case m
         elif pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first']] += 1
+                return categories['first']
             else:
-                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case g, l
         elif (pipelines["pipeline1"][0] == 'NoneType' and pipelines["pipeline2"][1] == 'NoneType') or (pipelines["pipeline1"][1] == 'NoneType' and pipelines["pipeline2"][0] == 'NoneType'):
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first_or_second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first_or_second']] += 1
+                return categories['first_or_second']
             else:
-                print("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipelines is not drawing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case h, n
     elif pipelines["pipeline1"].count('NoneType') == 1:
         #case h
         if pipelines["pipeline1"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second']] += 1
+                return categories['second']
             elif result == 2:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second_first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
+                return categories['second_first']
             else:
-                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         #case n
         elif pipelines["pipeline1"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first']] += 1
+                return categories['first']
             elif result == 2:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second_first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second_first']] += 1
+                return categories['second_first']
             else:
-                print("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline2 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     # case p, q
     elif pipelines["pipeline2"].count('NoneType') == 1:
         # case p
         if pipelines["pipeline2"][0] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second']] += 1
+                return categories['second']
             elif result == 1:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first_second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
+                return categories['first_second']
             else:
-                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
         # case q
         elif pipelines["pipeline2"][1] == 'NoneType':
             if result == 0:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['second']] += 1
+                return categories['second']
             elif result == 1:
-                grouped_by_dataset_result[dataset][acronym] = {'result': categories['first_second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-                grouped_by_algorithm_results[acronym][categories['first_second']] += 1
+                return categories['first_second']
             else:
-                print("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+                raise Exception("pipeline1 is not winning. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
     #case r
     elif pipelines["pipeline1"].count('NoneType') == 0 and pipelines["pipeline2"].count('NoneType') == 0:
         if result == 0:
-            grouped_by_dataset_result[dataset][acronym] = {'result': categories['draw'], 'accuracy': scores[result - 1 if result != 0 else result]}
-            grouped_by_algorithm_results[acronym][categories['draw']] += 1
+            return categories['draw']
         elif result == 1:
-            grouped_by_dataset_result[dataset][acronym] = {'result': categories['first_second'], 'accuracy': scores[result - 1 if result != 0 else result]}
-            grouped_by_algorithm_results[acronym][categories['first_second']] += 1
+            return categories['first_second']
         elif result == 2:
-            grouped_by_dataset_result[dataset][acronym] = {'result': categories['second_first'], 'accuracy': scores[result - 1 if result != 0 else result]}
-            grouped_by_algorithm_results[acronym][categories['second_first']] += 1
+            return categories['second_first']
     else:
-        print("This configuration matches nothing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
+        raise Exception("This configuration matches nothing. " + str(pipelines) + " baseline_score " + str(baseline_scores[0]) + " scores " + str(scores) + " algorithm " + str(acronym))
 
-    return grouped_by_algorithm_results, grouped_by_dataset_result
 
-def aggregate_results(simple_results, pipeline, categories, over_more_runs = False):
+def aggregate_results(simple_results, pipeline, categories):
     grouped_by_dataset_result = {}
     grouped_by_algorithm_results = {}
 
     for key, value in simple_results.items():
         acronym = key.split("_")[0]
         dataset = key.split("_")[1]
-        pipelines = compose_pipeline(value[0]['pipeline'], value[1]['pipeline'], pipeline)
+        pipelines, parameters = compose_pipeline(value[0]['pipeline'], value[1]['pipeline'], pipeline)
         result = -1
         if value[0]['accuracy'] > value[1]['accuracy']:
             result = 1
@@ -268,7 +256,7 @@ def aggregate_results(simple_results, pipeline, categories, over_more_runs = Fal
         if result == -1:
             raise ValueError('A very bad thing happened.')
 
-        validity, problem = check_validity(pipelines, result)
+        validity, label = check_validity(pipelines, result)
 
         if not(grouped_by_dataset_result.__contains__(dataset)):
             grouped_by_dataset_result[dataset] = {}
@@ -278,21 +266,18 @@ def aggregate_results(simple_results, pipeline, categories, over_more_runs = Fal
             for _, category in categories.items():
                 grouped_by_algorithm_results[acronym][category] = 0
 
-        if validity:
-            grouped_by_algorithm_results, grouped_by_dataset_result = compute_result(
-                result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result, pipelines, categories,
-                [value[0]['baseline_score'], value[1]['baseline_score']], [value[0]['accuracy'], value[1]['accuracy']])
-        else:
-            grouped_by_dataset_result[dataset][acronym] = {'result': categories[problem], 'accuracy': value[result - 1 if result != 0 else result]['accuracy']}
-            grouped_by_algorithm_results[acronym][problem] += 1
+        try:
+            if validity:
+                label = compute_result(result, dataset, acronym, grouped_by_algorithm_results, grouped_by_dataset_result,
+                                       pipelines, categories, [value[0]['baseline_score'], value[1]['baseline_score']],
+                                       [value[0]['accuracy'], value[1]['accuracy']])
+            grouped_by_dataset_result[dataset][acronym] = label
+            grouped_by_algorithm_results[acronym][label] += 1
+        except Exception as e:
+                print(str(e))
 
-    if over_more_runs:
-        return grouped_by_algorithm_results, grouped_by_dataset_result
-    else:
-        for dataset, value in grouped_by_dataset_result.items():
-            for algorithm, v in value.items():
-                grouped_by_dataset_result[dataset][algorithm] = v['result']
-        return grouped_by_algorithm_results, grouped_by_dataset_result
+    return grouped_by_algorithm_results, grouped_by_dataset_result
+
 
 def compute_summary(grouped_by_algorithm_results, categories):
     summary = {}
