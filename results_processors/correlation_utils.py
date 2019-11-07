@@ -39,16 +39,16 @@ def create_num_equal_elements_matrix(grouped_by_dataset_result):
     return num_equal_elements_matrix
 
 def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
-    with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), "w") as out:
-        out.write("length," + ",".join(str(i) for i in range(1, len(algorithms) + 1)) + ",tot\n")
+    with open(os.path.join(result_path, 'num_equal_elements_matrix.csv'), 'w') as out:
+        out.write('length,' + ','.join(str(i) for i in range(1, len(algorithms) + 1)) + ',tot\n')
         for i in range(0, np.size(num_equal_elements_matrix, 0)):
             row = str(i + 1)
             sum = 0
             for j in range(0, np.size(num_equal_elements_matrix, 1)):
                 value = int(num_equal_elements_matrix[i][j])
                 sum += value
-                row += "," + str(value)
-            row += "," + str(sum) + "\n"
+                row += ',' + str(value)
+            row += ',' + str(sum) + '\n'
             out.write(row)
 
 def create_hamming_matrix(X, y):
@@ -78,20 +78,20 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
-            if result != "inconsistent" and result != "not_exec" and result != "no_majority":
+            if result != 'inconsistent' and result != 'not_exec' and result != 'no_majority':
                 if consider_just_the_order:
-                    data.append([dataset, algorithm, "order" if result == categories['first_second'] or result == categories['second_first'] or result == "not_exec_once" else "no_order"])
+                    data.append([dataset, algorithm, 'order' if result == categories['first_second'] or result == categories['second_first'] or result == 'not_exec_once' else 'no_order'])
                 else:
                     data.append([dataset, algorithm, result])
 
     df = pd.DataFrame(data)
     df.columns = ['dataset', 'algorithm', 'class']
 
-    meta = pd.read_csv("../openml/meta-features.csv")
+    meta = pd.read_csv('../openml/meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
 
-    join = pd.merge(df.astype(str), meta.astype(str), left_on="dataset", right_on="did")
-    join = join.drop(columns=["version", "status", "format", "uploader", "did", "row"])
+    join = pd.merge(df.astype(str), meta.astype(str), left_on='dataset', right_on='did')
+    join = join.drop(columns=['version', 'status', 'format', 'uploader', 'did', 'row'])
     encoded = pd.DataFrame(OrdinalEncoder().fit_transform(join), columns=join.columns)
 
     kendall = encoded.corr(method ='kendall')['class'].to_frame()
@@ -103,17 +103,17 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
 
     correlation_matrix = pd.concat([kendall, pearson, spearman], axis=1, sort=False)
 
-    X, y = encoded.drop(columns = ["class"]), encoded["class"]
+    X, y = encoded.drop(columns = ['class']), encoded['class']
     visualizer = FeatureCorrelation(method='mutual_info-classification', labels=X.columns)
     visualizer.fit(X, y)
 
-    correlation_matrix = correlation_matrix.drop("class", axis = 0)
+    correlation_matrix = correlation_matrix.drop('class', axis = 0)
     correlation_matrix['mutual_info-classification'] = visualizer.scores_.tolist()
 
     return correlation_matrix
 
 def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
-    with open(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), "w") as out:
+    with open(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), 'w') as out:
         out.write(correlation_matrix.to_csv())
 
 def chi2test(observed, uniform_distribution):
@@ -222,7 +222,7 @@ def chi2tests(grouped_by_algorithm_results, summary, categories):
 
 def save_chi2tests(result_path, test, order_test, not_order_test):
     def saver(collection, name):
-        with open(name, "w") as out:
+        with open(name, 'w') as out:
             header = False
             for algorithm, values in collection.items():
                 if not header:
@@ -230,8 +230,8 @@ def save_chi2tests(result_path, test, order_test, not_order_test):
                     header = True
                 row = algorithm
                 for _, value in values.items():
-                    row += "," + str(value)
-                row += "\n"
+                    row += ',' + str(value)
+                row += '\n'
                 out.write(row)
 
     saver(test, os.path.join(result_path, 'test.csv'))

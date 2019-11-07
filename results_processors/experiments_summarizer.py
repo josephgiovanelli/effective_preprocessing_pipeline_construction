@@ -36,7 +36,7 @@ def main():
     simple_results = load_results(input_path, filtered_data_sets)
     simple_results = rich_simple_results(simple_results, pipeline, categories)
 
-    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, pipeline, categories)
+    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
     summary = compute_summary(grouped_by_algorithm_results, categories)
 
     save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_data_sets)
