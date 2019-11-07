@@ -157,7 +157,7 @@ def chi2test(observed, uniform_distribution):
     # else:
     #     print('fail to reject H0 -> similarity found -> there is NOT a majority -> balanced frequencies')
     # print()
-    return critical // 0.0001 / 10000, stat // 0.0001 / 10000, statistic_test, alpha // 0.0001 / 10000, p, p_value
+    return critical // 0.0001 / 10000, stat // 0.0001 / 10000, statistic_test, alpha // 0.0001 / 10000, p // 0.0001 / 10000, p_value
 
 def chi2tests(grouped_by_algorithm_results, summary, categories):
     grouped_by_algorithm_results['summary'] = summary

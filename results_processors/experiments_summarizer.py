@@ -7,7 +7,7 @@ import os
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
-    aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary
+    aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary, rich_simple_results
 
 
 def parse_args():
@@ -31,23 +31,25 @@ def main():
     categories = create_possible_categories(pipeline)
     result_path = create_directory(result_path, 'summary')
 
-    filtered_datasets = get_filtered_datasets()
+    filtered_data_sets = get_filtered_datasets()
 
-    simple_results = load_results(input_path, filtered_datasets)
-    save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_datasets)
+    simple_results = load_results(input_path, filtered_data_sets)
+    simple_results = rich_simple_results(simple_results, pipeline, categories)
 
-    grouped_by_algorithm_results, grouped_by_dataset_result = aggregate_results(simple_results, pipeline, categories)
+    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, pipeline, categories)
     summary = compute_summary(grouped_by_algorithm_results, categories)
+
+    save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_data_sets)
     save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
 
     test, order_test, not_order_test = chi2tests(grouped_by_algorithm_results, summary, categories)
     save_chi2tests(create_directory(result_path, 'chi2tests'), test, order_test, not_order_test)
 
-    num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_dataset_result)
+    num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_data_set_result)
     save_num_equal_elements_matrix(create_directory(result_path, 'correlations'), num_equal_elements_matrix)
 
     for consider_just_the_order in [True, False]:
-        correlation_matrix = create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order)
+        correlation_matrix = create_correlation_matrix(filtered_data_sets, grouped_by_data_set_result, categories, consider_just_the_order)
         save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, consider_just_the_order)
 
 main()
