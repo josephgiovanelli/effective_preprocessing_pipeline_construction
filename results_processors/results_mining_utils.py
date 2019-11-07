@@ -8,7 +8,6 @@ from os import listdir
 from os.path import isfile, join
 
 from commons import benchmark_suite, algorithms
-from results_processors.correlation_utils import max_frequency, same_frequency
 
 
 def create_possible_categories(pipeline):
@@ -298,9 +297,7 @@ def rich_simple_results(simple_results, pipeline_scheme, categories):
         simple_results[key] = {'conf1': value[0], 'conf2': value[1], 'result': value[2]}
     return simple_results
 
-
-
-def aggregate_results(simple_results, pipeline_scheme, categories):
+def aggregate_results(simple_results, categories):
     grouped_by_dataset_result = {}
     grouped_by_algorithm_results = {}
 
@@ -337,69 +334,8 @@ def save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results,
             row += "," + str(value)
         out.write(row)
 
-
-def element_with_best_accuracy(results):
-    indexed_results = []
-    for r in results:
-        indexed_results.append([r['accuracy'], r['result']])
-    max = indexed_results[0][0]
-    index = 0
-    for i in range(1, len(indexed_results)):
-        if indexed_results[i][0] > max:
-            max = indexed_results[i][0]
-            index = i
-    return indexed_results[index][1]
-
-def find_best_result(results):
-    original_length = len(results)
-    new_results = [r['result'] for r in results if r['result'] != 'inconsistent']
-    if new_results == []:
-        return 'inconsistent', 'inconsistent', original_length
-    max_frequent_result, frequency = max_frequency(new_results)
-    if same_frequency(new_results, max_frequent_result, frequency):
-        results = [r for r in results if r['result'] != 'inconsistent']
-        final_result = element_with_best_accuracy(results)
-    else:
-        final_result = max_frequent_result
-    return final_result, max_frequent_result, frequency
-
-def merge_runs_by_dataset(grouped_by_dataset_result, no_algorithms=False):
-
-    details_grouped_by_dataset_result = merge_dict(grouped_by_dataset_result)
-    new_grouped_by_dataset_result = {}
-
-
-    for dataset, value in details_grouped_by_dataset_result.items():
-        algorithms_dict = merge_dict(value)
-        new_grouped_by_dataset_result[dataset] = {}
-        details_grouped_by_dataset_result[dataset] = {}
-
-        if no_algorithms:
-            results = [item for sublist in list(algorithms_dict.values()) for item in sublist]
-            final_result, max_frequent_result, frequency = find_best_result(results)
-            details_grouped_by_dataset_result[dataset]["noalgorithm"] = {'results': [r['result'] for r in results], 'final_result': final_result,
-                                              'max_frequent_result': max_frequent_result, 'frequency': frequency}
-            new_grouped_by_dataset_result[dataset]['noalgorithm'] = final_result
-        else:
-            for algorithm, results in algorithms_dict.items():
-                final_result, max_frequent_result, frequency = find_best_result(results)
-                algorithms_dict[algorithm] = {'results': [r['result'] for r in results], 'final_result': final_result,
-                                              'max_frequent_result': max_frequent_result, 'frequency': frequency}
-
-
-                new_grouped_by_dataset_result[dataset][algorithm] = final_result
-
-            details_grouped_by_dataset_result[dataset] = algorithms_dict
-
-    return details_grouped_by_dataset_result, new_grouped_by_dataset_result
-
-def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result, no_algorithms = False):
-    if no_algorithms:
-        mylist = ['NOALGORITHM']
-    else:
-        mylist = algorithms
-
-    for element in mylist:
+def save_details_grouped_by_dataset_result(result_path, details_grouped_by_dataset_result):
+    for element in algorithms:
         header = False
         acronym = ''.join([a for a in element if a.isupper()]).lower()
 
@@ -414,26 +350,6 @@ def save_details_grouped_by_dataset_result(result_path, details_grouped_by_datas
                                                  .replace(']', '')
                                                  .replace('\'', '') for elem in detail_results[acronym].values()))
                 out.write(dataset + ',' + results + '\n')
-
-def grouped_by_dataset_to_grouped_by_algorithm(grouped_by_dataset_result, categories, no_algorithms = False):
-    grouped_by_algorithm_results = {}
-    if no_algorithms:
-        mylist = ['NOALGORITHM']
-    else:
-        mylist = algorithms
-
-    for element in mylist:
-        acronym = ''.join([a for a in element if a.isupper()]).lower()
-        grouped_by_algorithm_results[acronym] = {}
-        for _, category in categories.items():
-            grouped_by_algorithm_results[acronym][category] = 0
-
-    for _, result in grouped_by_dataset_result.items():
-        for acronym, category in result.items():
-            grouped_by_algorithm_results[acronym][category] += 1
-
-    return grouped_by_algorithm_results
-
 
 
 

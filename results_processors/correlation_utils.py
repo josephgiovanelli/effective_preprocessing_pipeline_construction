@@ -24,14 +24,6 @@ def max_frequency(x):
 
     return num, counter
 
-def same_frequency(x, num, frequency):
-    for i in list(filter(lambda a: a != num, x)):
-        curr_frequency = x.count(i)
-        if curr_frequency == frequency:
-            return True
-    return False
-
-
 def create_num_equal_elements_matrix(grouped_by_dataset_result):
     num_equal_elements_matrix = np.zeros((len(algorithms), len(algorithms)))
 
@@ -59,7 +51,6 @@ def save_num_equal_elements_matrix(result_path, num_equal_elements_matrix):
             row += "," + str(sum) + "\n"
             out.write(row)
 
-
 def create_hamming_matrix(X, y):
     def hamming_distance(s1, s2):
         assert len(s1) == len(s2)
@@ -82,8 +73,6 @@ def create_hamming_matrix(X, y):
             value = np.zeros(5)
             value[X[i][1]] = y[i] + 1
     return hamming_matrix
-
-
 
 def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order):
     data = []
