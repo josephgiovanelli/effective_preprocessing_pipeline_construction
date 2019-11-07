@@ -169,16 +169,18 @@ def compute_result(result, pipelines, categories, baseline_scores, scores):
         return 'baseline'
     #case d, o
     elif pipelines['pipeline1'].count('NoneType') == 2 or pipelines['pipeline2'].count('NoneType') == 2:
-        if pipelines['pipeline1'].count('NoneType') == 2:
+        if pipelines['pipeline1'].count('NoneType') == 2 and pipelines['pipeline2'].count('NoneType') == 0:
             if result == 2:
                 return categories['second_first']
             else:
                 raise Exception('pipeline2 is not winning. ' + str(pipelines) + ' baseline_score ' + str(baseline_scores[0]) + ' scores ' + str(scores))
-        else:
+        elif pipelines['pipeline1'].count('NoneType') == 0 and pipelines['pipeline2'].count('NoneType') == 2:
             if result == 1:
                 return categories['first_second']
             else:
                 raise Exception('pipeline1 is not winning. ' + str(pipelines) + ' baseline_score ' + str(baseline_scores[0]) + ' scores ' + str(scores))
+        else:
+            raise Exception('Baseline doesn\'t draw with a pipeline with just one operation. pipelines:' + str(pipelines) + ' baseline_score ' + str(baseline_scores[0]) + ' scores ' + str(scores))
     #case f, m, l, g
     elif pipelines['pipeline1'].count('NoneType') == 1 and pipelines['pipeline2'].count('NoneType') == 1:
         #case f
@@ -279,13 +281,14 @@ def rich_simple_results(simple_results, pipeline_scheme, categories):
 
         validity, label = check_validity(pipelines, winner)
 
-        try:
-            if validity:
+        if validity:
+            try:
                 baseline_scores = [first_configuration['baseline_score'], second_configuration['baseline_score']]
                 accuracies = [first_configuration['accuracy'], second_configuration['accuracy']]
                 label = compute_result(winner, pipelines, categories, baseline_scores, accuracies)
-        except Exception as e:
+            except Exception as e:
                 print(str(e))
+                label = categories['inconsistent']
 
         first_configuration['pipeline'] = pipelines['pipeline1']
         second_configuration['pipeline'] = pipelines['pipeline2']
@@ -305,7 +308,6 @@ def aggregate_results(simple_results, categories):
         acronym = key.split('_')[0]
         data_set = key.split('_')[1]
         instantiate_results(grouped_by_dataset_result, grouped_by_algorithm_results, data_set, acronym, categories)
-
 
         grouped_by_dataset_result[data_set][acronym] = value['result']['label']
         grouped_by_algorithm_results[acronym][value['result']['label']] += 1
