@@ -96,7 +96,7 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
 
     join = pd.merge(df, meta, left_on='dataset', right_on='did')
     join = join.drop(columns=['did'])
-    with open(os.path.join('../results/features_rebalance2/summary', 'join.csv'), 'w') as out:
+    with open(os.path.join('../results/features_rebalance/summary', 'join.csv'), 'w') as out:
         out.write(join.to_csv())
     numeric_features = join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
     categorical_features = join.select_dtypes(include=['object']).columns
@@ -106,7 +106,7 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
         ('num', Pipeline(steps=[('a', FunctionTransformer())]), join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
         ('cat', Pipeline(steps=[('b', OrdinalEncoder())]), join.select_dtypes(include=['object']).columns)]).fit_transform(join)
     encoded = pd.DataFrame(encoded, columns = reorder_features)
-    with open(os.path.join('../results/features_rebalance2/summary', 'encoded.csv'), 'w') as out:
+    with open(os.path.join('../results/features_rebalance/summary', 'encoded.csv'), 'w') as out:
         out.write(encoded.to_csv())
 
     kendall = encoded.corr(method ='kendall')['class'].to_frame()
