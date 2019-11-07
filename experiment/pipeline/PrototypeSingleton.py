@@ -71,6 +71,11 @@ class PrototypeSingleton:
        self.current_categorical_features = []
        self.current_categorical_features.extend(self.original_categorical_features)
 
+   def applyColumnTransformer(self):
+       len_numerical_features = len(self.current_numerical_features)
+       len_categorical_features = len(self.current_categorical_features)
+       self.current_numerical_features = list(range(0, len_numerical_features))
+       self.current_categorical_features = list(range(len_numerical_features, len_categorical_features + len_numerical_features))
 
    def discretizeFeatures(self):
        self.current_categorical_features.extend(self.current_numerical_features)

@@ -31,6 +31,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
         operators = []
         for part in PrototypeSingleton.getInstance().getParts():
             item = args[part]
+            print(item, PrototypeSingleton.getInstance().getFeatures())
             if 'NoneType' in item[0]:
                 continue
             else:
@@ -56,6 +57,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                              numerical_features),
                             ('cat', Pipeline(steps=[('encoding', globals()[item[0].split('_', 1)[-1]](**params))]),
                              categorical_features)])
+                    PrototypeSingleton.getInstance().applyColumnTransformer()
                     operators.append((part, operator))
                 elif item[0].split('_', 1)[0] == 'normalizer':
                     numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
@@ -65,6 +67,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                              numerical_features),
                             ('cat', Pipeline(steps=[('identity_categorical', FunctionTransformer())]),
                              categorical_features)])
+                    PrototypeSingleton.getInstance().applyColumnTransformer()
                     operators.append((part, operator))
                 elif item[0].split('_', 1)[0] == 'discretize':
                     numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
@@ -79,6 +82,8 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                 else:
                     operator = globals()[item[0].split('_',1)[-1]](**params)
                     operators.append((part, operator))
+            print(item, PrototypeSingleton.getInstance().getFeatures())
+            print()
 
         PrototypeSingleton.getInstance().resetFeatures()
         if 'random_state' in algorithm().get_params():
