@@ -5,7 +5,7 @@ import argparse
 import os
 
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
-    create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests
+    create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests, join_result_meta_features
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
     aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary, rich_simple_results
 
@@ -53,7 +53,8 @@ def main():
 
     # create the correlation matrices
     for consider_just_the_order in [True, False]:
-        correlation_matrix = create_correlation_matrix(filtered_data_sets, grouped_by_data_set_result, categories, consider_just_the_order)
+        data = join_result_meta_features(filtered_data_sets, grouped_by_data_set_result, categories, consider_just_the_order)
+        correlation_matrix = create_correlation_matrix(data)
         save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, consider_just_the_order)
 
 main()

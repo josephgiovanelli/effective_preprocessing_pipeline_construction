@@ -76,7 +76,7 @@ def create_hamming_matrix(X, y):
             value[X[i][1]] = y[i] + 1
     return hamming_matrix
 
-def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order):
+def join_result_meta_features(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order):
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
@@ -96,18 +96,18 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
 
     join = pd.merge(df, meta, left_on='dataset', right_on='did')
     join = join.drop(columns=['did'])
-    with open(os.path.join('../results/features_rebalance/summary', 'join.csv'), 'w') as out:
-        out.write(join.to_csv())
-    numeric_features = join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
-    categorical_features = join.select_dtypes(include=['object']).columns
+
+    return join
+
+def create_correlation_matrix(data):
+    numeric_features = data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
+    categorical_features = data.select_dtypes(include=['object']).columns
     reorder_features = list(numeric_features) + list(categorical_features)
     encoded = ColumnTransformer(
     transformers=[
-        ('num', Pipeline(steps=[('a', FunctionTransformer())]), join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
-        ('cat', Pipeline(steps=[('b', OrdinalEncoder())]), join.select_dtypes(include=['object']).columns)]).fit_transform(join)
+        ('num', Pipeline(steps=[('a', FunctionTransformer())]), data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
+        ('cat', Pipeline(steps=[('b', OrdinalEncoder())]), data.select_dtypes(include=['object']).columns)]).fit_transform(data)
     encoded = pd.DataFrame(encoded, columns = reorder_features)
-    with open(os.path.join('../results/features_rebalance/summary', 'encoded.csv'), 'w') as out:
-        out.write(encoded.to_csv())
 
     kendall = encoded.corr(method ='kendall')['class'].to_frame()
     pearson = encoded.corr(method ='pearson')['class'].to_frame()
