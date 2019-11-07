@@ -27,27 +27,31 @@ def create_directory(result_path, directory):
     return result_path
 
 def main():
+    # configure environment
     input_path, result_path, pipeline = parse_args()
     categories = create_possible_categories(pipeline)
     result_path = create_directory(result_path, 'summary')
-
     filtered_data_sets = get_filtered_datasets()
 
+    # load and format the results
     simple_results = load_results(input_path, filtered_data_sets)
     simple_results = rich_simple_results(simple_results, pipeline, categories)
+    save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_data_sets)
 
+    # summarize the results
     grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
     summary = compute_summary(grouped_by_algorithm_results, categories)
-
-    save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_data_sets)
     save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
 
+    # compute the chi square test
     test, order_test, not_order_test = chi2tests(grouped_by_algorithm_results, summary, categories)
     save_chi2tests(create_directory(result_path, 'chi2tests'), test, order_test, not_order_test)
 
+    # compute the matrix with the number of equal result per data set
     num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_data_set_result)
     save_num_equal_elements_matrix(create_directory(result_path, 'correlations'), num_equal_elements_matrix)
 
+    # create the correlation matrices
     for consider_just_the_order in [True, False]:
         correlation_matrix = create_correlation_matrix(filtered_data_sets, grouped_by_data_set_result, categories, consider_just_the_order)
         save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, consider_just_the_order)

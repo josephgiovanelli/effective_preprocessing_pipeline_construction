@@ -1,6 +1,8 @@
 from scipy.stats import chi2_contingency, chi2
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from yellowbrick.target import FeatureCorrelation
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, LabelEncoder, FunctionTransformer
 
 from scipy import stats as s
 
@@ -80,19 +82,32 @@ def create_correlation_matrix(filtered_datasets, grouped_by_dataset_result, cate
         for algorithm, result in value.items():
             if result != 'inconsistent' and result != 'not_exec' and result != 'no_majority':
                 if consider_just_the_order:
-                    data.append([dataset, algorithm, 'order' if result == categories['first_second'] or result == categories['second_first'] or result == 'not_exec_once' else 'no_order'])
+                    data.append([int(dataset), algorithm, 'order' if result == categories['first_second'] or result == categories['second_first'] or result == 'not_exec_once' else 'no_order'])
                 else:
-                    data.append([dataset, algorithm, result])
+                    data.append([int(dataset), algorithm, result])
 
     df = pd.DataFrame(data)
     df.columns = ['dataset', 'algorithm', 'class']
 
     meta = pd.read_csv('../openml/meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
+    meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
+    meta = meta.astype(int)
 
-    join = pd.merge(df.astype(str), meta.astype(str), left_on='dataset', right_on='did')
-    join = join.drop(columns=['version', 'status', 'format', 'uploader', 'did', 'row'])
-    encoded = pd.DataFrame(OrdinalEncoder().fit_transform(join), columns=join.columns)
+    join = pd.merge(df, meta, left_on='dataset', right_on='did')
+    join = join.drop(columns=['did'])
+    with open(os.path.join('../results/features_rebalance2/summary', 'join.csv'), 'w') as out:
+        out.write(join.to_csv())
+    numeric_features = join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
+    categorical_features = join.select_dtypes(include=['object']).columns
+    reorder_features = list(numeric_features) + list(categorical_features)
+    encoded = ColumnTransformer(
+    transformers=[
+        ('num', Pipeline(steps=[('a', FunctionTransformer())]), join.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
+        ('cat', Pipeline(steps=[('b', OrdinalEncoder())]), join.select_dtypes(include=['object']).columns)]).fit_transform(join)
+    encoded = pd.DataFrame(encoded, columns = reorder_features)
+    with open(os.path.join('../results/features_rebalance2/summary', 'encoded.csv'), 'w') as out:
+        out.write(encoded.to_csv())
 
     kendall = encoded.corr(method ='kendall')['class'].to_frame()
     pearson = encoded.corr(method ='pearson')['class'].to_frame()
