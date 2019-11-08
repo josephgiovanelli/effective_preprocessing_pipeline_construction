@@ -44,8 +44,15 @@ def main():
     save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
 
     # compute the chi square test
-    test, order_test, not_order_test = chi2tests(grouped_by_algorithm_results, summary, categories)
-    save_chi2tests(create_directory(result_path, 'chi2tests'), test, order_test, not_order_test)
+    temp_result_path = create_directory(result_path, 'chi2tests')
+    for uniform in [True, False]:
+        temp_result_path = create_directory(result_path, 'chi2tests')
+        tests = chi2tests(grouped_by_algorithm_results, summary, categories, uniform)
+        if uniform:
+            temp_result_path = create_directory(temp_result_path, 'uniform')
+        else:
+            temp_result_path = create_directory(temp_result_path, 'binary')
+        save_chi2tests(temp_result_path, tests)
 
     # compute the matrix with the number of equal result per data set
     num_equal_elements_matrix = create_num_equal_elements_matrix(grouped_by_data_set_result)
