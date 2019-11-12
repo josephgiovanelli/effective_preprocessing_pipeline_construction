@@ -46,7 +46,6 @@ def main():
     # compute the chi square test
     temp_result_path = create_directory(result_path, 'chi2tests')
     for uniform in [True, False]:
-        temp_result_path = create_directory(result_path, 'chi2tests')
         tests = chi2tests(grouped_by_algorithm_results, summary, categories, uniform)
         if uniform:
             temp_result_path = create_directory(temp_result_path, 'uniform')
