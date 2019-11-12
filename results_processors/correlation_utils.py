@@ -76,25 +76,32 @@ def create_hamming_matrix(X, y):
             value[X[i][1]] = y[i] + 1
     return hamming_matrix
 
-def join_result_meta_features(filtered_datasets, grouped_by_dataset_result, categories, consider_just_the_order):
+def get_results(grouped_by_dataset_result):
     data = []
     for dataset, value in grouped_by_dataset_result.items():
         for algorithm, result in value.items():
             if result != 'inconsistent' and result != 'not_exec' and result != 'no_majority':
-                if consider_just_the_order:
-                    data.append([int(dataset), algorithm, 'order' if result == categories['first_second'] or result == categories['second_first'] or result == 'not_exec_once' else 'no_order'])
-                else:
-                    data.append([int(dataset), algorithm, result])
+                data.append([int(dataset), algorithm, result])
 
     df = pd.DataFrame(data)
     df.columns = ['dataset', 'algorithm', 'class']
+    return df
+
+def join_result_with_simple_meta_features(filtered_datasets, data, categories, consider_just_the_order):
+
+    if consider_just_the_order:
+        for key, value in categories.items():
+            if key == 'first_second' or key == 'second_first' or key == 'not_exec_once':
+                data.replace(value, 'order')
+            else:
+                data.replace(value, 'no_order')
 
     meta = pd.read_csv('../openml/meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
     meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
     meta = meta.astype(int)
 
-    join = pd.merge(df, meta, left_on='dataset', right_on='did')
+    join = pd.merge(data, meta, left_on='dataset', right_on='did')
     join = join.drop(columns=['did'])
 
     return join
@@ -254,8 +261,6 @@ def save_chi2tests(result_path, tests):
     for key, value in tests.items():
         if value:
             saver(value, os.path.join(result_path, key + '.csv'))
-
-
 
 
 
