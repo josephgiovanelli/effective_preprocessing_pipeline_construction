@@ -232,7 +232,7 @@ def compute_result(result, pipelines, categories, baseline_scores, scores):
         # case q
         elif pipelines['pipeline2'][1] == 'NoneType':
             if result == 0:
-                return categories['second']
+                return categories['first']
             elif result == 1:
                 return categories['first_second']
             else:
