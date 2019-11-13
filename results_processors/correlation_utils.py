@@ -87,14 +87,30 @@ def get_results(grouped_by_dataset_result):
     df.columns = ['dataset', 'algorithm', 'class']
     return df
 
+def join_result_with_meta_features(filtered_datasets, data, categories, group_no_order):
+    if group_no_order:
+        for key, value in categories.items():
+            if key != 'first_second' and key != 'second_first' and key != 'not_exec_once':
+                data = data.replace(value, 'no_order')
+
+    meta = pd.read_csv('../openml/extended-meta-features.csv')
+    meta = meta.loc[meta['id'].isin(filtered_datasets)]
+    meta = meta.drop(columns=['name', 'runs'])
+
+    join = pd.merge(data, meta, left_on='dataset', right_on='id')
+    join = join.drop(columns=['id'])
+
+    return join
+
+
 def join_result_with_simple_meta_features(filtered_datasets, data, categories, consider_just_the_order):
 
     if consider_just_the_order:
         for key, value in categories.items():
             if key == 'first_second' or key == 'second_first' or key == 'not_exec_once':
-                data.replace(value, 'order')
+                data = data.replace(value, 'order')
             else:
-                data.replace(value, 'no_order')
+                data = data.replace(value, 'no_order')
 
     meta = pd.read_csv('../openml/meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
@@ -134,9 +150,15 @@ def create_correlation_matrix(data):
 
     return correlation_matrix
 
+def save_data_frame(result_path, data_frame):
+    with open(result_path, 'w') as out:
+        out.write(data_frame.to_csv())
+
 def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
-    with open(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), 'w') as out:
-        out.write(correlation_matrix.to_csv())
+    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), correlation_matrix)
+
+def save_train_meta_learner(result_path, train_meta_learner, group_no_order):
+    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '_no_grouped') + '.csv'), train_meta_learner)
 
 def chi2test(observed, distribution):
     # the print after the first '->' are valid just if we comparing the observed frequencies with the uniform distribution
