@@ -62,18 +62,12 @@ def main():
 
     data = get_results(grouped_by_data_set_result)
     # create the correlation matrices
-    for group_all in [True, False]:
-        join = join_result_with_simple_meta_features(filtered_data_sets, data)
-        if group_all:
-            join = modify_class(join, categories, 'group_all')
-        correlation_matrix = create_correlation_matrix(join)
-        save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_all)
-
     for group_no_order in [True, False]:
         join = join_result_with_simple_meta_features(filtered_data_sets, data)
         if group_no_order:
             join = modify_class(join, categories, 'group_no_order')
+        correlation_matrix = create_correlation_matrix(join)
         save_train_meta_learner(create_directory(result_path, 'meta_learner'), join, group_no_order)
-
+        save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_no_order)
 
 main()
