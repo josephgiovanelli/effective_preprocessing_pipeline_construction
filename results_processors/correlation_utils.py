@@ -87,6 +87,20 @@ def get_results(grouped_by_dataset_result):
     df.columns = ['dataset', 'algorithm', 'class']
     return df
 
+def encode_data(data):
+    numeric_features = data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
+    categorical_features = data.select_dtypes(include=['object']).columns
+    reorder_features = list(numeric_features) + list(categorical_features)
+    encoded = ColumnTransformer(
+        transformers=[
+            ('num', Pipeline(steps=[('a', FunctionTransformer())]),
+             data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
+            ('cat', Pipeline(steps=[('b', OrdinalEncoder())]),
+             data.select_dtypes(include=['object']).columns)]).fit_transform(data)
+    encoded = pd.DataFrame(encoded, columns=reorder_features)
+
+    return encoded
+
 def join_result_with_meta_features(filtered_datasets, data, categories, group_no_order):
     if group_no_order:
         for key, value in categories.items():
@@ -123,14 +137,7 @@ def join_result_with_simple_meta_features(filtered_datasets, data, categories, c
     return join
 
 def create_correlation_matrix(data):
-    numeric_features = data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns
-    categorical_features = data.select_dtypes(include=['object']).columns
-    reorder_features = list(numeric_features) + list(categorical_features)
-    encoded = ColumnTransformer(
-    transformers=[
-        ('num', Pipeline(steps=[('a', FunctionTransformer())]), data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
-        ('cat', Pipeline(steps=[('b', OrdinalEncoder())]), data.select_dtypes(include=['object']).columns)]).fit_transform(data)
-    encoded = pd.DataFrame(encoded, columns = reorder_features)
+    encoded = encode_data(data)
 
     kendall = encoded.corr(method ='kendall')['class'].to_frame()
     pearson = encoded.corr(method ='pearson')['class'].to_frame()
@@ -150,15 +157,14 @@ def create_correlation_matrix(data):
 
     return correlation_matrix
 
-def save_data_frame(result_path, data_frame):
-    with open(result_path, 'w') as out:
-        out.write(data_frame.to_csv())
+def save_data_frame(result_path, data_frame, index):
+    data_frame.to_csv(result_path, index=index)
 
 def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
-    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), correlation_matrix)
+    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), correlation_matrix, index=True)
 
 def save_train_meta_learner(result_path, train_meta_learner, group_no_order):
-    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '_no_grouped') + '.csv'), train_meta_learner)
+    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '_no_grouped') + '.csv'), train_meta_learner, index=False)
 
 def chi2test(observed, distribution):
     # the print after the first '->' are valid just if we comparing the observed frequencies with the uniform distribution
