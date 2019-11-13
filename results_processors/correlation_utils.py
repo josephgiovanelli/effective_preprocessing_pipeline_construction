@@ -101,12 +101,7 @@ def encode_data(data):
 
     return encoded
 
-def join_result_with_meta_features(filtered_datasets, data, categories, group_no_order):
-    if group_no_order:
-        for key, value in categories.items():
-            if key != 'first_second' and key != 'second_first' and key != 'not_exec_once':
-                data = data.replace(value, 'no_order')
-
+def join_result_with_meta_features(filtered_datasets, data):
     meta = pd.read_csv('../openml/extended-meta-features.csv')
     meta = meta.loc[meta['id'].isin(filtered_datasets)]
     meta = meta.drop(columns=['name', 'runs'])
@@ -117,15 +112,7 @@ def join_result_with_meta_features(filtered_datasets, data, categories, group_no
     return join
 
 
-def join_result_with_simple_meta_features(filtered_datasets, data, categories, consider_just_the_order):
-
-    if consider_just_the_order:
-        for key, value in categories.items():
-            if key == 'first_second' or key == 'second_first' or key == 'not_exec_once':
-                data = data.replace(value, 'order')
-            else:
-                data = data.replace(value, 'no_order')
-
+def join_result_with_simple_meta_features(filtered_datasets, data):
     meta = pd.read_csv('../openml/meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
     meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
@@ -135,6 +122,18 @@ def join_result_with_simple_meta_features(filtered_datasets, data, categories, c
     join = join.drop(columns=['did'])
 
     return join
+
+def modify_class(data, categories, option):
+    for key, value in categories.items():
+        if option == 'group_all':
+            if key == 'first_second' or key == 'second_first' or key == 'not_exec_once':
+                data = data.replace(value, 'order')
+            else:
+                data = data.replace(value, 'no_order')
+        if option == 'group_no_order':
+            if key != 'first_second' and key != 'second_first' and key != 'not_exec_once':
+                data = data.replace(value, 'no_order')
+    return data
 
 def create_correlation_matrix(data):
     encoded = encode_data(data)

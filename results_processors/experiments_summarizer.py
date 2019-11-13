@@ -7,7 +7,7 @@ import os
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests, \
     join_result_with_simple_meta_features, get_results, join_result_with_meta_features, save_data_frame, \
-    save_train_meta_learner
+    save_train_meta_learner, modify_class
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
     aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary, rich_simple_results
 
@@ -62,14 +62,18 @@ def main():
 
     data = get_results(grouped_by_data_set_result)
     # create the correlation matrices
-    for consider_just_the_order in [True, False]:
-        join = join_result_with_simple_meta_features(filtered_data_sets, data, categories, consider_just_the_order)
+    for group_all in [True, False]:
+        join = join_result_with_simple_meta_features(filtered_data_sets, data)
+        if group_all:
+            join = modify_class(join, categories, 'group_all')
         correlation_matrix = create_correlation_matrix(join)
-        save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, consider_just_the_order)
+        save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_all)
 
     for group_no_order in [True, False]:
-        train_meta_learner = join_result_with_meta_features(filtered_data_sets, data, categories, group_no_order)
-        save_train_meta_learner(create_directory(result_path, 'meta_learner'), train_meta_learner, group_no_order)
+        join = join_result_with_simple_meta_features(filtered_data_sets, data)
+        if group_no_order:
+            join = modify_class(join, categories, 'group_no_order')
+        save_train_meta_learner(create_directory(result_path, 'meta_learner'), join, group_no_order)
 
 
 main()
