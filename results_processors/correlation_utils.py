@@ -159,11 +159,11 @@ def create_correlation_matrix(data):
 def save_data_frame(result_path, data_frame, index):
     data_frame.to_csv(result_path, index=index)
 
-def save_correlation_matrix(result_path, correlation_matrix, consider_just_the_order):
-    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '' if not consider_just_the_order else '_order') + '.csv'), correlation_matrix, index=True)
+def save_correlation_matrix(result_path, correlation_matrix, group_no_order):
+    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '_grouped' if not group_no_order else '') + '.csv'), correlation_matrix, index=True)
 
 def save_train_meta_learner(result_path, train_meta_learner, group_no_order):
-    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '_no_grouped') + '.csv'), train_meta_learner, index=False)
+    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '') + '.csv'), train_meta_learner, index=False)
 
 def chi2test(observed, distribution):
     # the print after the first '->' are valid just if we comparing the observed frequencies with the uniform distribution
