@@ -11,6 +11,8 @@ from sklearn.preprocessing import RobustScaler, StandardScaler, MinMaxScaler, Po
 from .utils import generate_domain_space
 
 import pandas as pd
+import numpy as np
+
 
 class PrototypeSingleton:
    __instance = None
@@ -66,6 +68,10 @@ class PrototypeSingleton:
        self.original_categorical_features = cat_features
        self.current_categorical_features = cat_features
 
+   def set_X_y(self, X, y):
+       self.X = X
+       self.y = y
+
    def resetFeatures(self):
        self.current_numerical_features = self.original_numerical_features
        self.current_categorical_features = []
@@ -77,9 +83,21 @@ class PrototypeSingleton:
        self.current_numerical_features = list(range(0, len_numerical_features))
        self.current_categorical_features = list(range(len_numerical_features, len_categorical_features + len_numerical_features))
 
-   def discretizeFeatures(self):
+   def applyDiscretization(self):
        self.current_categorical_features.extend(self.current_numerical_features)
        self.current_numerical_features = []
+
+   def applyOneHotEncoding(self):
+       new_categorical_features = 0
+       for i in self.original_categorical_features:
+           new_categorical_features += len(np.unique(self.X[:, i]))
+       old_categorical_features = len(self.original_categorical_features)
+       old_features = len(self.original_categorical_features) + len(self.original_numerical_features)
+       new_features = old_features - old_categorical_features + new_categorical_features
+
+       len_numerical_features = len(self.current_numerical_features)
+       self.current_numerical_features = list(range(0, len_numerical_features))
+       self.current_categorical_features = list(range(len_numerical_features, new_features))
 
    def getFeatures(self):
        return self.current_numerical_features, self.current_categorical_features

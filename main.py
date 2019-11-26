@@ -24,6 +24,7 @@ def load_dataset(id):
     cat_features = [i for i, x in enumerate(categorical_indicator) if x == True]
     print("numeriche: " + str(len(num_features)) + " categoriche: " + str(len(cat_features)))
     PrototypeSingleton.getInstance().setFeatures(num_features, cat_features)
+    PrototypeSingleton.getInstance().set_X_y(X, y)
     return X, y
 
 def main(args):

@@ -31,6 +31,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
         operators = []
         for part in PrototypeSingleton.getInstance().getParts():
             item = args[part]
+            #print(item, PrototypeSingleton.getInstance().getFeatures())
             if 'NoneType' in item[0]:
                 continue
             else:
@@ -57,7 +58,10 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                              numerical_features),
                             ('cat', Pipeline(steps=[('encoding', globals()[operator_param](**params))]),
                              categorical_features)])
-                    PrototypeSingleton.getInstance().applyColumnTransformer()
+                    if operator_param == 'OneHotEncoder':
+                        PrototypeSingleton.getInstance().applyOneHotEncoding()
+                    else:
+                        PrototypeSingleton.getInstance().applyColumnTransformer()
                 elif transformation_param == 'normalize':
                     numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
                     operator = ColumnTransformer(
@@ -75,7 +79,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                              numerical_features),
                             ('cat', Pipeline(steps=[('identity', FunctionTransformer())]),
                              categorical_features)])
-                    PrototypeSingleton.getInstance().discretizeFeatures()
+                    PrototypeSingleton.getInstance().applyDiscretization()
                 else:
                     operator = globals()[operator_param](**params)
                 operators.append((part, operator))
