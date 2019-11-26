@@ -16,12 +16,12 @@ class PrototypeSingleton:
    __instance = None
 
    POOL = {
-       "imputate": [None, SimpleImputer(), IterativeImputer()],
+       "impute": [None, SimpleImputer(), IterativeImputer()],
        "encode": [None, OneHotEncoder()],
        #"encode": [OneHotEncoder(), OrdinalEncoder()],
        "rebalance": [None, NearMiss(), SMOTE()],
        #"rebalance": [None, NearMiss(), CondensedNearestNeighbour(), SMOTE()],
-       "normalizer": [None, StandardScaler(), PowerTransformer(), MinMaxScaler(), RobustScaler()],
+       "normalize": [None, StandardScaler(), PowerTransformer(), MinMaxScaler(), RobustScaler()],
        "discretize": [None, KBinsDiscretizer(), Binarizer()],
        "features": [None, PCA(), SelectKBest(), FeatureUnion([("pca", PCA()), ("selectkbest", SelectKBest())])]
    }
