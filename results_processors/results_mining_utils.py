@@ -141,8 +141,17 @@ def compose_pipeline(pipeline1, pipeline2, scheme):
                 parameters['pipeline2'].append(raw_pipeline2[step][1][param])
     return pipelines, parameters
 
+def have_same_steps(pipelines):
+    pipeline1_has_first = not pipelines['pipeline1'][0].__contains__('NoneType')
+    pipeline1_has_second = not pipelines['pipeline1'][1].__contains__('NoneType')
+    pipeline2_has_first = not pipelines['pipeline2'][0].__contains__('NoneType')
+    pipeline2_has_second = not pipelines['pipeline2'][1].__contains__('NoneType')
+    both_just_first =  pipeline1_has_first and not pipeline1_has_second and pipeline2_has_first and not pipeline2_has_second
+    both_just_second =  not pipeline1_has_first and pipeline1_has_second and not pipeline2_has_first and pipeline2_has_second
+    both_baseline =  not pipeline1_has_first and not pipeline1_has_second and not pipeline2_has_first and not pipeline2_has_second
+    return both_just_first or both_just_second or both_baseline
 
-def check_validity(pipelines, result):
+def check_validity(pipelines, result, acc1, acc2):
     if pipelines['pipeline1'] == [] and pipelines['pipeline2'] == []:
         validity, problem = False, 'not_exec'
     elif pipelines['pipeline1'] == [] or pipelines['pipeline2'] == []:
@@ -157,7 +166,18 @@ def check_validity(pipelines, result):
         else:
             validity = True
         problem = '' if validity else 'inconsistent'
-    return validity, problem
+
+    if not(validity):
+        if have_same_steps(pipelines):
+            validity, problem, result = True, '', 0
+        else:
+            if result == 0:
+                validity = True
+            else:
+                validity = abs(acc1 - acc2) < 1
+                result = 0 if validity else result
+
+    return validity, problem, result
 
 
 def compute_result(result, pipelines, categories, baseline_scores, scores):
@@ -165,7 +185,7 @@ def compute_result(result, pipelines, categories, baseline_scores, scores):
         raise Exception('Baselines with different scores')
 
     #case a, b, c, e, i
-    if result == 0 and baseline_scores[0] == scores[0]:
+    if result == 0 and (baseline_scores[0] == scores[0] or baseline_scores[1] == scores[1]):
         return 'baseline'
     #case d, o
     elif pipelines['pipeline1'].count('NoneType') == 2 or pipelines['pipeline2'].count('NoneType') == 2:
@@ -279,7 +299,7 @@ def rich_simple_results(simple_results, pipeline_scheme, categories):
         except Exception as e:
             print(str(e))
 
-        validity, label = check_validity(pipelines, winner)
+        validity, label, winner = check_validity(pipelines, winner, first_configuration['accuracy'], second_configuration['accuracy'])
 
         if validity:
             try:
