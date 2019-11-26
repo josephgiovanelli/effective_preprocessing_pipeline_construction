@@ -58,7 +58,7 @@ def pipeline_conf_to_full_pipeline(args, algorithm, seed, algo_config):
                             ('cat', Pipeline(steps=[('encoding', globals()[operator_param](**params))]),
                              categorical_features)])
                     PrototypeSingleton.getInstance().applyColumnTransformer()
-                elif transformation_param == 'normalizer':
+                elif transformation_param == 'normalize':
                     numerical_features, categorical_features = PrototypeSingleton.getInstance().getFeatures()
                     operator = ColumnTransformer(
                         transformers=[
