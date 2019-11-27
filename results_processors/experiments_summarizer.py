@@ -5,28 +5,12 @@ import argparse
 import os
 
 from results_processors.results_cooking_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
-    create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests, \
-    join_result_with_simple_meta_features, get_results, join_result_with_extended_meta_features, save_data_frame, \
-    save_train_meta_learner, modify_class, join_result_with_extracted_meta_features
-from results_processors.results_extraction_utils import create_possible_categories, get_filtered_datasets, load_results, \
-    aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary, rich_simple_results
+    create_correlation_matrix, save_correlation_matrix, chi2tests, save_chi2tests, join_result_with_simple_meta_features, \
+    get_results, save_train_meta_learner, modify_class, join_result_with_extracted_meta_features
+from results_processors.results_extraction_utils import create_possible_categories, get_filtered_datasets, \
+    extract_results, save_results
+from results_processors.utils import parse_args, create_directory
 
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Automated Machine Learning Workflow creation and configuration")
-    parser.add_argument("-p", "--pipeline", nargs="+", type=str, required=True, help="step of the pipeline to execute")
-    parser.add_argument("-i", "--input", nargs="?", type=str, required=True, help="path of second input")
-    parser.add_argument("-o", "--output", nargs="?", type=str, required=True, help="path where put the results")
-    args = parser.parse_args()
-    return args.input, args.output, args.pipeline
-
-def create_directory(result_path, directory):
-    result_path = os.path.join(result_path, directory)
-
-    if not os.path.exists(result_path):
-        os.makedirs(result_path)
-
-    return result_path
 
 def main():
     # configure environment
@@ -35,15 +19,16 @@ def main():
     result_path = create_directory(result_path, 'summary')
     filtered_data_sets = get_filtered_datasets()
 
-    # load and format the results
-    simple_results = load_results(input_path, filtered_data_sets)
-    simple_results = rich_simple_results(simple_results, pipeline, categories)
-    save_simple_results(create_directory(result_path, 'algorithms_summary'), simple_results, filtered_data_sets)
+    simple_results, grouped_by_algorithm_results, grouped_by_data_set_result, summary = extract_results(input_path,
+                                                                                                        filtered_data_sets,
+                                                                                                        pipeline,
+                                                                                                        categories)
 
-    # summarize the results
-    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
-    summary = compute_summary(grouped_by_algorithm_results, categories)
-    save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
+    save_results(create_directory(result_path, 'algorithms_summary'),
+                 filtered_data_sets,
+                 simple_results,
+                 grouped_by_algorithm_results,
+                 summary)
 
     # compute the chi square test
     for uniform in [True, False]:
@@ -68,10 +53,6 @@ def main():
             join = modify_class(join, categories, 'group_no_order')
         correlation_matrix = create_correlation_matrix(join)
         save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_no_order)
-
-    join = join_result_with_extracted_meta_features(data)
-    join = modify_class(join, categories, 'group_no_order')
-    save_train_meta_learner(create_directory(result_path, 'meta_learner'), join, group_no_order=True)
 
 
 main()

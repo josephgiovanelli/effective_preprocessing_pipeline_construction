@@ -373,6 +373,24 @@ def save_details_grouped_by_dataset_result(result_path, details_grouped_by_datas
                                                  .replace('\'', '') for elem in detail_results[acronym].values()))
                 out.write(dataset + ',' + results + '\n')
 
+def extract_results(input_path, filtered_data_sets, pipeline, categories):
+    # load and format the results
+    simple_results = load_results(input_path, filtered_data_sets)
+    simple_results = rich_simple_results(simple_results, pipeline, categories)
+
+    # summarize the results
+    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
+    summary = compute_summary(grouped_by_algorithm_results, categories)
+
+    return simple_results, grouped_by_algorithm_results, grouped_by_data_set_result, summary
+
+def save_results(result_path, filtered_data_sets, simple_results, grouped_by_algorithm_results, summary):
+    save_simple_results(result_path, simple_results, filtered_data_sets)
+    save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
+
+
+
+
 
 
 
