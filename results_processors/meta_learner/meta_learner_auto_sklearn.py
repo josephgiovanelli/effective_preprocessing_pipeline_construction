@@ -7,9 +7,9 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OrdinalEncoder
 
-from results_processors.correlation_utils import encode_data
+from results_processors.results_cooking_utils import encode_data
 
-data = pd.read_csv('../results/features_rebalance2/summary/meta_learner/train_data_rf_grouped.csv')
+data = pd.read_csv('../../results/features_rebalance2/meta_learner/train_data_rf_grouped.csv')
 #columns = data.columns
 #data = SimpleImputer(strategy="constant").fit_transform(data)
 
