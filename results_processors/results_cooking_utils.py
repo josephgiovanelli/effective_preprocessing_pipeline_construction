@@ -102,9 +102,6 @@ def encode_data(data):
 
     return encoded
 
-def impute_data(data):
-    return SimpleImputer(strategy="mean").fit_transform(data)
-
 def join_result_with_extended_meta_features(filtered_datasets, data):
     meta = pd.read_csv('meta_features/extended-meta-features.csv')
     meta = meta.loc[meta['id'].isin(filtered_datasets)]
@@ -115,8 +112,8 @@ def join_result_with_extended_meta_features(filtered_datasets, data):
 
     return join
 
-def join_result_with_extracted_meta_features(data):
-    meta = pd.read_csv('meta_features/extracted-meta-features.csv')
+def join_result_with_extracted_meta_features(data, impute):
+    meta = pd.read_csv('meta_features/' + ('imputed-' if impute else '') + 'extracted-meta-features.csv', index_col=False)
 
     join = pd.merge(data, meta, left_on='dataset', right_on='id')
     join = join.drop(columns=['id'])
@@ -171,11 +168,11 @@ def create_correlation_matrix(data):
 def save_data_frame(result_path, data_frame, index):
     data_frame.to_csv(result_path, index=index)
 
-def save_correlation_matrix(result_path, correlation_matrix, group_no_order):
-    save_data_frame(os.path.join(result_path, 'correlation_matrix' + ( '_grouped' if not group_no_order else '') + '.csv'), correlation_matrix, index=True)
+def save_correlation_matrix(result_path, name, correlation_matrix, group_no_order):
+    save_data_frame(os.path.join(result_path, name + ( '_grouped' if group_no_order else '') + '.csv'), correlation_matrix, index=True)
 
-def save_train_meta_learner(result_path, train_meta_learner, group_no_order):
-    save_data_frame(os.path.join(result_path, 'train_data' + ( '_grouped' if group_no_order else '') + '.csv'), train_meta_learner, index=False)
+def save_train_meta_learner(result_path, name, train_meta_learner, group_no_order):
+    save_data_frame(os.path.join(result_path, name + ( '_grouped' if group_no_order else '') + '.csv'), train_meta_learner, index=False)
 
 def chi2test(observed, distribution):
     # the print after the first '->' are valid just if we comparing the observed frequencies with the uniform distribution

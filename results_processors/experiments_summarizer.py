@@ -48,7 +48,7 @@ def main():
         if group_no_order:
             join = modify_class(join, categories, 'group_no_order')
         correlation_matrix = create_correlation_matrix(join)
-        save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_no_order)
+        save_correlation_matrix(create_directory(result_path, 'correlations'), 'correlation_matrix', correlation_matrix, group_no_order)
 
 
 main()
