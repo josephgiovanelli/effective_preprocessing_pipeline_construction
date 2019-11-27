@@ -5,7 +5,7 @@ from pymfe.mfe import MFE
 from commons import benchmark_suite
 
 def get_filtered_datasets():
-    df = pd.read_csv("../openml/simple-meta-features.csv")
+    df = pd.read_csv("../meta_features/simple-meta-features.csv")
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
@@ -35,6 +35,6 @@ for id in get_filtered_datasets():
     print(dict)
 
 df = pd.DataFrame(meta_features)
-df.to_csv('../openml/extracted-meta-features.csv', index=False)
-#df.to_csv('../openml/extracted-meta-features1.csv', index=False)
-#df.to_csv('../openml/extracted-meta-features2.csv', index=False)
+df.to_csv('../meta_features/extracted-meta-features.csv', index=False)
+#df.to_csv('../meta_features/extracted-meta-features1.csv', index=False)
+#df.to_csv('../meta_features/extracted-meta-features2.csv', index=False)

@@ -14,8 +14,8 @@ import pandas as pd
 from commons import algorithms
 
 def join_meta_features():
-    meta = pd.read_csv('../openml/extracted-meta-features1.csv')
-    meta2 = pd.read_csv('../openml/extracted-meta-features2.csv')
+    meta = pd.read_csv('../meta_features/extracted-meta-features1.csv')
+    meta2 = pd.read_csv('../meta_features/extracted-meta-features2.csv')
 
     join = pd.merge(meta2, meta, left_on='id', right_on='id')
 
@@ -27,4 +27,4 @@ def save_data_frame(result_path, data_frame, index):
 
 
 data = join_meta_features()
-save_data_frame('../openml/extracted-meta-features.csv', data, index=False)
+save_data_frame('../meta_features/extracted-meta-features.csv', data, index=False)

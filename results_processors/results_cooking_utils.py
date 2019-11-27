@@ -106,7 +106,7 @@ def impute_data(data):
     return SimpleImputer(strategy="mean").fit_transform(data)
 
 def join_result_with_extended_meta_features(filtered_datasets, data):
-    meta = pd.read_csv('../openml/extended-meta-features.csv')
+    meta = pd.read_csv('meta_features/extended-meta-features.csv')
     meta = meta.loc[meta['id'].isin(filtered_datasets)]
     meta = meta.drop(columns=['name', 'runs'])
 
@@ -116,7 +116,7 @@ def join_result_with_extended_meta_features(filtered_datasets, data):
     return join
 
 def join_result_with_extracted_meta_features(data):
-    meta = pd.read_csv('../openml/extracted-meta-features.csv')
+    meta = pd.read_csv('meta_features/extracted-meta-features.csv')
 
     join = pd.merge(data, meta, left_on='dataset', right_on='id')
     join = join.drop(columns=['id'])
@@ -125,7 +125,7 @@ def join_result_with_extracted_meta_features(data):
 
 
 def join_result_with_simple_meta_features(filtered_datasets, data):
-    meta = pd.read_csv('../openml/simple-meta-features.csv')
+    meta = pd.read_csv('meta_features/simple-meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
     meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
     meta = meta.astype(int)
