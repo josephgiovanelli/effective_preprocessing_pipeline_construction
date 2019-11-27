@@ -6,8 +6,8 @@ import os
 
 from results_processors.correlation_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests, \
-    join_result_with_simple_meta_features, get_results, join_result_with_meta_features, save_data_frame, \
-    save_train_meta_learner, modify_class
+    join_result_with_simple_meta_features, get_results, join_result_with_extended_meta_features, save_data_frame, \
+    save_train_meta_learner, modify_class, join_result_with_extracted_meta_features
 from results_processors.results_mining_utils import create_possible_categories, get_filtered_datasets, load_results, \
     aggregate_results, save_simple_results, save_grouped_by_algorithm_results, compute_summary, rich_simple_results
 
@@ -67,7 +67,11 @@ def main():
         if group_no_order:
             join = modify_class(join, categories, 'group_no_order')
         correlation_matrix = create_correlation_matrix(join)
-        save_train_meta_learner(create_directory(result_path, 'meta_learner'), join, group_no_order)
         save_correlation_matrix(create_directory(result_path, 'correlations'), correlation_matrix, group_no_order)
+
+    join = join_result_with_extracted_meta_features(data)
+    join = modify_class(join, categories, 'group_no_order')
+    save_train_meta_learner(create_directory(result_path, 'meta_learner'), join, group_no_order=True)
+
 
 main()

@@ -1,5 +1,6 @@
 from scipy.stats import chi2_contingency, chi2
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from yellowbrick.target import FeatureCorrelation
 from sklearn.preprocessing import OrdinalEncoder, LabelEncoder, FunctionTransformer
@@ -101,10 +102,21 @@ def encode_data(data):
 
     return encoded
 
-def join_result_with_meta_features(filtered_datasets, data):
+def impute_data(data):
+    return SimpleImputer(strategy="mean").fit_transform(data)
+
+def join_result_with_extended_meta_features(filtered_datasets, data):
     meta = pd.read_csv('../openml/extended-meta-features.csv')
     meta = meta.loc[meta['id'].isin(filtered_datasets)]
     meta = meta.drop(columns=['name', 'runs'])
+
+    join = pd.merge(data, meta, left_on='dataset', right_on='id')
+    join = join.drop(columns=['id'])
+
+    return join
+
+def join_result_with_extracted_meta_features(data):
+    meta = pd.read_csv('../openml/extracted-meta-features.csv')
 
     join = pd.merge(data, meta, left_on='dataset', right_on='id')
     join = join.drop(columns=['id'])

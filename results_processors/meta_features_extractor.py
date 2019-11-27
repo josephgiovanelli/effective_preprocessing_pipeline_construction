@@ -13,7 +13,6 @@ def get_filtered_datasets():
     df = df['did']
     return df.values.flatten().tolist()
 
-
 meta_features = []
 for id in get_filtered_datasets():
     dataset = openml.datasets.get_dataset(id)
@@ -23,8 +22,9 @@ for id in get_filtered_datasets():
     dict = {'id': id}
     print(id, dataset.name)
 
-    # Extract all measures
     mfe = MFE()
+    #mfe = MFE(groups=["model-based", "landmarking"])
+    #mfe = MFE(groups=["general", "statistical", "info-theory"])
     mfe.fit(X, y)
     ft = mfe.extract()
 
@@ -35,4 +35,6 @@ for id in get_filtered_datasets():
     print(dict)
 
 df = pd.DataFrame(meta_features)
-df.to_csv('../openml/meta-features-extracted.csv', index=False)
+df.to_csv('../openml/extracted-meta-features.csv', index=False)
+#df.to_csv('../openml/extracted-meta-features1.csv', index=False)
+#df.to_csv('../openml/extracted-meta-features2.csv', index=False)
