@@ -34,7 +34,7 @@ def create_possible_categories(pipeline):
             'not_exec_once': not_exec_once}
 
 def get_filtered_datasets():
-    df = pd.read_csv('../openml/meta-features.csv')
+    df = pd.read_csv('../openml/simple-meta-features.csv')
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
@@ -106,7 +106,7 @@ def save_simple_results(result_path, simple_results, filtered_datasets):
             out.write('dataset,name,dimensions,' + header + '\n')
 
 
-    df = pd.read_csv('../openml/meta-features.csv')
+    df = pd.read_csv('../openml/simple-meta-features.csv')
     df = df.loc[df['did'].isin(filtered_datasets)]
 
     for key, value in simple_results.items():

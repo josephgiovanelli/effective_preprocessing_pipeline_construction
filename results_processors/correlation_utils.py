@@ -113,7 +113,7 @@ def join_result_with_meta_features(filtered_datasets, data):
 
 
 def join_result_with_simple_meta_features(filtered_datasets, data):
-    meta = pd.read_csv('../openml/meta-features.csv')
+    meta = pd.read_csv('../openml/simple-meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
     meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
     meta = meta.astype(int)

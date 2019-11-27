@@ -59,7 +59,7 @@ def __write_scenario(path, scenario):
         print(e)
 
 def get_filtered_datasets():
-    df = pd.read_csv("openml/meta-features.csv")
+    df = pd.read_csv("openml/simple-meta-features.csv")
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
