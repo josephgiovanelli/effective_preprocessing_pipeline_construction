@@ -113,9 +113,9 @@ def join_result_with_extended_meta_features(filtered_datasets, data):
     return join
 
 def join_result_with_extracted_meta_features(data, impute):
-    meta = pd.read_csv('meta_features/' + ('imputed-' if impute else '') + 'extracted-meta-features.csv', index_col=False)
+    meta = pd.read_csv('meta_features/' + ('imputed-mean-' if impute else '') + 'extracted-meta-features.csv', index_col=False)
 
-    join = pd.merge(data, meta, left_on='dataset', right_on='id')
+    join = pd.merge(meta, data, left_on='id', right_on='dataset')
     join = join.drop(columns=['id'])
 
     return join

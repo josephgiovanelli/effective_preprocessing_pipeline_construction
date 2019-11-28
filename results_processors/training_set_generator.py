@@ -37,13 +37,14 @@ def main():
                 temp = pd.merge(temp, join[columns], left_on='dataset', right_on='dataset')
                 temp = temp.drop(columns=['dataset'])
             else:
-                temp = temp.drop(columns=['dataset', 'algorithm'])
+                columns = ['dataset', 'algorithm'] if algorithm != 'all' else ['dataset']
+                temp = temp.drop(columns=columns)
                 columns = list(temp.columns)
                 for column in columns:
                     if temp[column].isnull().sum() != 0:
                         temp = temp.drop(columns=[column])
 
-            name = 'ts_' + algorithm + ('_imputed' if impute else '')
+            name = 'ts_' + algorithm + ('_mean_imputed' if impute else '')
 
             correlation_matrix = create_correlation_matrix(temp)
             save_correlation_matrix(create_directory(result_path, 'correlations'), name, correlation_matrix, group_no_order=False)
