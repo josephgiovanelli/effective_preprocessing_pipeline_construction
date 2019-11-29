@@ -167,15 +167,9 @@ def check_validity(pipelines, result, acc1, acc2):
             validity = True
         problem = '' if validity else 'inconsistent'
 
-    if not(validity):
+    if not(validity) and pipelines['pipeline1'] != [] and pipelines['pipeline2'] != []:
         if have_same_steps(pipelines):
             validity, problem, result = True, '', 0
-        else:
-            if result == 0:
-                validity = True
-            else:
-                validity = abs(acc1 - acc2) < 1
-                result = 0 if validity else result
 
     return validity, problem, result
 
