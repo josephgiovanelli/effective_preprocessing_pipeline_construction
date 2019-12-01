@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
 
@@ -19,36 +20,29 @@ def main():
     _, _, grouped_by_data_set_result, _ = extract_results(input_path, filtered_data_sets, pipeline, categories)
     data = get_results(grouped_by_data_set_result)
 
-    for impute in [True, False]:
-        join = join_result_with_extracted_meta_features(data, impute)
-        join = modify_class(join, categories, 'group_no_order')
-        for algorithm in ['knn', 'rf', 'nb', 'all']:
+    join = join_result_with_extracted_meta_features(data, impute=False)
+    join = modify_class(join, categories, 'group_no_order')
+    for algorithm in ['knn', 'rf', 'nb', 'all']:
 
-            if algorithm != 'all':
-                temp = join[join['algorithm'] == algorithm]
-            else:
-                temp = join
+        if algorithm != 'all':
+            temp = join[join['algorithm'] == algorithm]
+        else:
+            temp = join
 
-            if impute:
-                temp = temp.drop(columns=['class', 'algorithm'])
-                columns = list(temp.columns)
-                temp = pd.DataFrame(SimpleImputer(strategy="constant").fit_transform(temp), columns=columns)
-                columns = ['dataset', 'algorithm', 'class'] if algorithm == 'all' else ['dataset', 'class']
-                temp = pd.merge(temp, join[columns], left_on='dataset', right_on='dataset')
-                temp = temp.drop(columns=['dataset'])
-            else:
-                columns = ['dataset', 'algorithm'] if algorithm != 'all' else ['dataset']
-                temp = temp.drop(columns=columns)
-                columns = list(temp.columns)
-                for column in columns:
-                    if temp[column].isnull().sum() != 0:
-                        temp = temp.drop(columns=[column])
 
-            name = 'ts_' + algorithm + ('_mean_imputed' if impute else '')
+        columns = ['dataset', 'algorithm'] if algorithm != 'all' else ['dataset']
+        temp = temp.drop(columns=columns)
+        columns = list(temp.columns)
+        rows = np.size(temp, 0)
+        for column in columns:
+            if temp[column].isnull().sum() == rows:
+                temp = temp.drop(columns=[column])
 
-            correlation_matrix = create_correlation_matrix(temp)
-            save_correlation_matrix(create_directory(result_path, 'correlations'), name, correlation_matrix, group_no_order=False)
+        columns = np.size(temp, 1)
+        print(algorithm + ' ' + str(rows) + ' ' + str(columns))
 
-            save_train_meta_learner(result_path, name, temp, group_no_order=False)
+        name = 'ts_' + algorithm
+
+        save_train_meta_learner(result_path, name, temp, group_no_order=False)
 
 main()

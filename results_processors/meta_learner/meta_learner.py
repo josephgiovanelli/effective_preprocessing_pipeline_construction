@@ -4,78 +4,167 @@ import sklearn.metrics
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, \
+    confusion_matrix
+from sklearn.model_selection import cross_val_score, cross_validate, cross_val_predict, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OrdinalEncoder
 from sklearn.tree import DecisionTreeClassifier
 
 from results_processors.results_cooking_utils import encode_data
 
+import json
 
-validations = ['train', 'test']
+def save_data_frame(result_path, data_frame, index):
+    data_frame.to_csv(result_path, index=index)
 
-data = pd.read_csv('../../results/features_rebalance2/meta_learner/ts_rf.csv')
+validations = ['just-train', 'hold-out', 'cross-validation1', 'cross-validation2', 'leave-one-out']
 
-#columns = data.columns
-#data = SimpleImputer(strategy="constant").fit_transform(data)
-#data = pd.DataFrame(data=data, columns=columns)
+data = pd.read_csv('../../results/features_rebalance/meta_learner/ts_rf.csv')
 
-#data = encode_data(data)
+X, y = data.drop(columns = ['class']), data['class']
 
+columns = X.columns
+X = SimpleImputer(strategy="constant").fit_transform(X)
+X = pd.DataFrame(data=X, columns=columns)
+
+results = {}
 for validation in validations:
-    X, y = data.drop(columns = ['class']), data['class']
 
-    if validation == 'test':
-        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+    results[validation] = {}
 
     estimator =  RandomForestClassifier()
 
-    if validation == 'test':
-        estimator.fit(X_train, y_train)
-    else:
+    if validation == 'just-train':
         estimator.fit(X, y)
+        y_hat = estimator.predict(X)
+        results[validation] = {
+            'accuracy': accuracy_score(y, y_hat),
+            'balanced_accuracy': balanced_accuracy_score(y, y_hat),
+            'precision': precision_score(y, y_hat, average=None).tolist(),
+            'recall': recall_score(y, y_hat, average=None).tolist(),
+            'f1': f1_score(y, y_hat, average=None).tolist(),
+            'confusion_matrix': confusion_matrix(y, y_hat, labels=["no_order", "RF", "FR"]).tolist()
+        }
+    elif validation == 'hold-out':
+        X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(X, y, random_state=1)
+        estimator.fit(X_train, y_train)
+        y_hat = estimator.predict(X_train)
+        results[validation]['train'] = {
+            'accuracy': accuracy_score(y_train, y_hat),
+            'balanced_accuracy': balanced_accuracy_score(y_train, y_hat),
+            'precision': precision_score(y_train, y_hat, average=None).tolist(),
+            'recall': recall_score(y_train, y_hat, average=None).tolist(),
+            'f1': f1_score(y_train, y_hat, average=None).tolist(),
+            'confusion_matrix': confusion_matrix(y_train, y_hat, labels=["no_order", "RF", "FR"]).tolist()
+        }
+        y_hat = estimator.predict(X_test)
+        results[validation]['test'] = {
+            'accuracy': accuracy_score(y_test, y_hat),
+            'balanced_accuracy': balanced_accuracy_score(y_test, y_hat),
+            'precision': precision_score(y_test, y_hat, average=None).tolist(),
+            'recall': recall_score(y_test, y_hat, average=None).tolist(),
+            'f1': f1_score(y_test, y_hat, average=None).tolist(),
+            'confusion_matrix': confusion_matrix(y_test, y_hat, labels=["no_order", "RF", "FR"]).tolist()
+        }
+    elif validation == 'cross-validation1':
+        scores = cross_validate(estimator,
+                                X,
+                                y,
+                                scoring=["accuracy", "balanced_accuracy", "precision_macro", "recall_macro", "f1_macro"],
+                                cv = 10,
+                                return_train_score=True,
+                                return_estimator=True)
+        results[validation]['train'] = {
+            'accuracy': (scores['train_accuracy'].mean(), scores['train_accuracy'].std() * 2),
+            'balanced_accuracy': (scores['train_balanced_accuracy'].mean(), scores['train_balanced_accuracy'].std() * 2),
+            'precision_macro': (scores['train_precision_macro'].mean(), scores['train_precision_macro'].std() * 2),
+            'recall_macro': (scores['train_recall_macro'].mean(), scores['train_recall_macro'].std() * 2),
+            'f1_macro': (scores['train_f1_macro'].mean(), scores['train_f1_macro'].std() * 2),
+        }
+        results[validation]['test'] = {
+            'accuracy': (scores['test_accuracy'].mean(), scores['test_accuracy'].std() * 2),
+            'balanced_accuracy': (scores['test_balanced_accuracy'].mean(), scores['test_balanced_accuracy'].std() * 2),
+            'precision_macro': (scores['test_precision_macro'].mean(), scores['test_precision_macro'].std() * 2),
+            'recall_macro': (scores['test_recall_macro'].mean(), scores['test_recall_macro'].std() * 2),
+            'f1_macro': (scores['test_f1_macro'].mean(), scores['test_f1_macro'].std() * 2),
+        }
+    elif validation == 'cross-validation2':
+        y_hat = cross_val_predict(estimator, X, y, cv=10)
+        results[validation] = {
+            'accuracy': accuracy_score(y, y_hat),
+            'balanced_accuracy': balanced_accuracy_score(y, y_hat).tolist(),
+            'precision': precision_score(y, y_hat, average=None).tolist(),
+            'recall': recall_score(y, y_hat, average=None).tolist(),
+            'f1': f1_score(y, y_hat, average=None).tolist(),
+            'confusion_matrix': confusion_matrix(y, y_hat, labels=["no_order", "RF", "FR"]).tolist()
+        }
+    elif validation == 'leave-one-out':
+        del results[validation]
+        results[validation + '1'] = {}
+        results[validation + '2'] = {}
 
-    y_hat = estimator.predict(X)
-    print("Accuracy score " + validation, sklearn.metrics.accuracy_score(y, y_hat))
-    print("Confusion Matrix " + validation + "\n", sklearn.metrics.confusion_matrix(y, y_hat, labels=["no_order", "RF", "FR"]))
+        loo = LeaveOneOut()
+        scores = {
+            'test_accuracy': [],
+            'test_balanced_accuracy': [],
+            'test_precision_macro': [],
+            'test_recall_macro': [],
+            'test_f1_macro': [],
+            'train_accuracy': [],
+            'train_balanced_accuracy': [],
+            'train_precision_macro': [],
+            'train_recall_macro': [],
+            'train_f1_macro': [],
+        }
+        y_hats = []
+        X, y = X.values, y.values
+        for train_index, test_index in loo.split(X):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            estimator.fit(X_train, y_train)
+            y_hat = estimator.predict(X_train)
+            scores['train_accuracy'].append(accuracy_score(y_train, y_hat))
+            scores['train_balanced_accuracy'].append(balanced_accuracy_score(y_train, y_hat))
+            scores['train_precision_macro'].append(precision_score(y_train, y_hat, average='macro').tolist())
+            scores['train_recall_macro'].append(recall_score(y_train, y_hat, average='macro').tolist())
+            scores['train_f1_macro'].append(f1_score(y_train, y_hat, average='macro').tolist())
+            y_hat = estimator.predict(X_test)
+            y_hats.append(y_hat[0])
+            scores['test_accuracy'].append(accuracy_score(y_test, y_hat))
+            scores['test_balanced_accuracy'].append(balanced_accuracy_score(y_test, y_hat))
+            scores['test_precision_macro'].append(precision_score(y_test, y_hat, average='macro').tolist())
+            scores['test_recall_macro'].append(recall_score(y_test, y_hat, average='macro').tolist())
+            scores['test_f1_macro'].append(f1_score(y_test, y_hat, average='macro').tolist())
+        
+        for key, value in scores.items():
+            scores[key] = np.asarray(value)
 
-    '''
-    n_nodes = estimator.tree_.node_count
-    children_left = estimator.tree_.children_left
-    children_right = estimator.tree_.children_right
-    feature = estimator.tree_.feature
-    threshold = estimator.tree_.threshold
+        results[validation + '1']['train'] = {
+            'accuracy': (scores['train_accuracy'].mean(), scores['train_accuracy'].std() * 2),
+            'balanced_accuracy': (
+            scores['train_balanced_accuracy'].mean(), scores['train_balanced_accuracy'].std() * 2),
+            'precision_macro': (scores['train_precision_macro'].mean(), scores['train_precision_macro'].std() * 2),
+            'recall_macro': (scores['train_recall_macro'].mean(), scores['train_recall_macro'].std() * 2),
+            'f1_macro': (scores['train_f1_macro'].mean(), scores['train_f1_macro'].std() * 2),
+        }
+        results[validation + '1']['test'] = {
+            'accuracy': (scores['test_accuracy'].mean(), scores['test_accuracy'].std() * 2),
+            'balanced_accuracy': (
+            scores['test_balanced_accuracy'].mean(), scores['test_balanced_accuracy'].std() * 2),
+            'precision_macro': (scores['test_precision_macro'].mean(), scores['test_precision_macro'].std() * 2),
+            'recall_macro': (scores['test_recall_macro'].mean(), scores['test_recall_macro'].std() * 2),
+            'f1_macro': (scores['test_f1_macro'].mean(), scores['test_f1_macro'].std() * 2),
+        }
+        results[validation + '2'] = {
+            'accuracy': accuracy_score(y, y_hats),
+            'balanced_accuracy': balanced_accuracy_score(y, y_hats),
+            'precision': precision_score(y, y_hats, average=None).tolist(),
+            'recall': recall_score(y, y_hats, average=None).tolist(),
+            'f1': f1_score(y, y_hats, average=None).tolist(),
+            'confusion_matrix': confusion_matrix(y, y_hats, labels=["no_order", "RF", "FR"]).tolist()
+        }
 
-    # The tree structure can be traversed to compute various properties such
-    # as the depth of each node and whether or not it is a leaf.
-    node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
-    is_leaves = np.zeros(shape=n_nodes, dtype=bool)
-    stack = [(0, -1)]  # seed is the root node id and its parent depth
-    while len(stack) > 0:
-        node_id, parent_depth = stack.pop()
-        node_depth[node_id] = parent_depth + 1
-
-        # If we have a test node
-        if (children_left[node_id] != children_right[node_id]):
-            stack.append((children_left[node_id], parent_depth + 1))
-            stack.append((children_right[node_id], parent_depth + 1))
-        else:
-            is_leaves[node_id] = True
-
-    print("The binary tree structure has %s nodes and has "
-          "the following tree structure:"
-          % n_nodes)
-    for i in range(n_nodes):
-        if is_leaves[i]:
-            print("%snode=%s leaf node." % (node_depth[i] * "\t", i))
-        else:
-            print("%snode=%s test node: go to node %s if X[:, %s] <= %s else to "
-                  "node %s."
-                  % (node_depth[i] * "\t",
-                     i,
-                     children_left[i],
-                     feature[i],
-                     threshold[i],
-                     children_right[i],
-                     ))
-    print()
-    '''
+print(results)
+with open('results.json', 'w') as outfile:
+    json.dump(results, outfile, indent=4)
