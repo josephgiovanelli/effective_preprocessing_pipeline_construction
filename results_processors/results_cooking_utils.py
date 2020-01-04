@@ -95,9 +95,10 @@ def encode_data(data):
     encoded = ColumnTransformer(
         transformers=[
             ('num', Pipeline(steps=[('a', FunctionTransformer())]),
-             data.select_dtypes(include=['int64', 'float64', 'int32', 'float32']).columns),
+             numeric_features),
             ('cat', Pipeline(steps=[('b', OrdinalEncoder())]),
-             data.select_dtypes(include=['object']).columns)]).fit_transform(data)
+             categorical_features)
+        ]).fit_transform(data)
     encoded = pd.DataFrame(encoded, columns=reorder_features)
 
     return encoded
