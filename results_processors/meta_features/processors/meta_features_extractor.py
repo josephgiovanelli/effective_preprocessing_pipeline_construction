@@ -11,7 +11,7 @@ benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44,
                        40670, 40701]
 
 def get_filtered_datasets():
-    df = pd.read_csv("../meta_features/simple-meta-features.csv")
+    df = pd.read_csv("../simple-meta-features.csv")
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
@@ -25,7 +25,7 @@ for impute in [True, False]:
         meta_features = []
         for id in get_filtered_datasets():
             dataset = openml.datasets.get_dataset(id)
-            X, y, _, _ = dataset.get_data(
+            X, y, categorical_indicator, _ = dataset.get_data(
                 dataset_format='array',
                 target=dataset.default_target_attribute)
 
@@ -45,10 +45,12 @@ for impute in [True, False]:
 
             for i in range(0, len(ft[0])):
                 dict[ft[0][i]] = ft[1][i]
+            dict["nr_cat"] = len([i for i, x in enumerate(categorical_indicator) if x == True])
+            dict["nr_num"] = len([i for i, x in enumerate(categorical_indicator) if x == False])
 
             meta_features.append(dict)
 
         df = pd.DataFrame(meta_features)
 
         name = ('imputed-' if impute else '') + 'extracted-meta-features' + ('-general' if general else 'model-landmarking')
-        df.to_csv('../meta_features/' + name + '.csv', index=False)
+        df.to_csv('../' + name + '.csv', index=False)
