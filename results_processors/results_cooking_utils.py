@@ -143,6 +143,9 @@ def modify_class(data, categories, option):
         if option == 'group_no_order':
             if key != 'first_second' and key != 'second_first' and key != 'not_exec_once':
                 data = data.replace(value, 'no_order')
+            if key == 'not_exec_once':
+                data = data.drop(data.index[data['class'] == value].tolist())
+
     return data
 
 def create_correlation_matrix(data):
