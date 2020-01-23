@@ -45,8 +45,8 @@ for impute in [True, False]:
 
             for i in range(0, len(ft[0])):
                 dict[ft[0][i]] = ft[1][i]
-            dict["nr_cat"] = len([i for i, x in enumerate(categorical_indicator) if x == True])
-            dict["nr_num"] = len([i for i, x in enumerate(categorical_indicator) if x == False])
+            #dict["nr_cat"] = len([i for i, x in enumerate(categorical_indicator) if x == True])
+            #dict["nr_num"] = len([i for i, x in enumerate(categorical_indicator) if x == False])
 
             meta_features.append(dict)
 
