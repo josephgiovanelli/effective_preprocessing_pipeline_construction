@@ -1,3 +1,4 @@
+import numpy as np
 import openml
 import pandas as pd
 from pymfe.mfe import MFE
@@ -9,6 +10,8 @@ benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44,
                        1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
                        40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
                        40670, 40701]
+
+decode = False
 
 def get_filtered_datasets():
     df = pd.read_csv("../simple-meta-features.csv")
@@ -29,6 +32,31 @@ for impute in [True, False]:
                 dataset_format='array',
                 target=dataset.default_target_attribute)
 
+            if decode:
+                if True in categorical_indicator:
+                    X = pd.DataFrame(X)
+                    for i in range(0, len(categorical_indicator)):
+                        if categorical_indicator[i]:
+                            X.iloc[:, i] = X.iloc[:, i].fillna(-1)
+                            X.iloc[:, i] = X.iloc[:, i].astype('str')
+                            X.iloc[:, i] = X.iloc[:, i].replace('-1', np.nan)
+                            print("str")
+                            print(X.iloc[:, i])
+                            print()
+                        else:
+                            X.iloc[:, i] = X.iloc[:, i].fillna(-1)
+                            X.iloc[:, i] = X.iloc[:, i].astype('float')
+                            X.iloc[:, i] = X.iloc[:, i].replace(-1.0, np.nan)
+                            print("float")
+                            print(X.iloc[:, i])
+                            print()
+
+
+                    print(X)
+                    X = X.values.tolist()
+                    y = y.astype('str').tolist()
+
+
             if impute:
                 X = SimpleImputer(strategy="constant").fit_transform(X)
 
@@ -45,12 +73,10 @@ for impute in [True, False]:
 
             for i in range(0, len(ft[0])):
                 dict[ft[0][i]] = ft[1][i]
-            #dict["nr_cat"] = len([i for i, x in enumerate(categorical_indicator) if x == True])
-            #dict["nr_num"] = len([i for i, x in enumerate(categorical_indicator) if x == False])
 
             meta_features.append(dict)
 
         df = pd.DataFrame(meta_features)
 
-        name = ('imputed-' if impute else '') + 'extracted-meta-features' + ('-general' if general else 'model-landmarking')
+        name = ('imputed-' if impute else '') + 'extracted-meta-features' + ('-general' if general else '-model-landmarking')
         df.to_csv('../' + name + '.csv', index=False)
