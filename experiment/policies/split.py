@@ -29,8 +29,8 @@ class Split(Policy):
                 fn=obj_pl, 
                 space=self.PIPELINE_SPACE,
                 algo=tpe.suggest, 
-                max_evals=None,
-                max_time=self.config['step_pipeline'],     
+                max_evals=self.config['step_pipeline'],
+                max_time=None,
                 trials=trials_pipelines,
                 show_progressbar=False,
                 verbose=0
@@ -51,8 +51,8 @@ class Split(Policy):
             fmin(fn=obj_algo, 
                 space=ALGORITHM_SPACE.get_domain_space(self.config['algorithm']), 
                 algo=tpe.suggest, 
-                max_evals=None,
-                max_time=self.config['time'] - self.config['step_pipeline'],
+                max_evals=self.config['time'] - self.config['step_pipeline'],
+                max_time=None,
                 trials=trials_algo,
                 show_progressbar=False,
                 verbose=0

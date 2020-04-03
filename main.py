@@ -16,10 +16,8 @@ def load_dataset(id):
         dataset_format='array',
         target=dataset.default_target_attribute
     )
-    X = SimpleImputer(strategy="constant").fit_transform(X)
     print(dataset.name)
     print(X, y)
-    PrototypeSingleton.getInstance().setPipeline(args.pipeline)
     num_features = [i for i, x in enumerate(categorical_indicator) if x == False]
     cat_features = [i for i, x in enumerate(categorical_indicator) if x == True]
     print("numeriche: " + str(len(num_features)) + " categoriche: " + str(len(cat_features)))
@@ -31,6 +29,10 @@ def main(args):
     scenario = scenarios.load(args.scenario)
     scenario = cli.apply_scenario_customization(scenario, args.customize)
     config = scenarios.to_config(scenario)
+
+    PrototypeSingleton.getInstance().setPipeline(getPipeline(scenario['setup']['dataset'], config['algorithm']))
+    print(getPipeline(scenario['setup']['dataset'], config['algorithm']))
+
     print('SCENARIO:\n {}'.format(json.dumps(scenario, indent=4, sort_keys=True)))
 
     X, y = load_dataset(scenario['setup']['dataset'])
@@ -47,6 +49,73 @@ def main(args):
     policy.run(X, y)
 
     serializer.serialize_results(scenario, policy, args.result_path)
+
+def getPipeline(id, algorithm):
+    if algorithm == 'KNearestNeighbors':
+        if id == 3:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 6:
+            return ['impute', 'encode', 'discretize', 'rebalance', 'features']
+        if id == 16:
+            return ['impute', 'encode', 'rebalance', 'discretize', 'features']
+        if id == 182:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 300:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 469:
+            return ['impute', 'encode', 'discretize', 'features', 'rebalance']
+        if id == 1461:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 1468:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 1494:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 40979:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+
+    if algorithm == 'NaiveBayes':
+        if id == 3:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 6:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 16:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 182:
+            return ['impute', 'encode', 'discretize', 'features', 'rebalance']
+        if id == 300:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 469:
+            return ['impute', 'encode', 'discretize', 'rebalance', 'features']
+        if id == 1461:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+        if id == 1468:
+            return ['impute', 'encode', 'rebalance', 'discretize', 'features']
+        if id == 1494:
+            return ['impute', 'encode', 'discretize', 'features', 'rebalance']
+        if id == 40979:
+            return ['impute', 'encode', 'normalize', 'features', 'rebalance']
+
+    if algorithm == 'RandomForest':
+        if id == 3:
+            return ['impute', 'encode', 'rebalance', 'discretize', 'features']
+        if id == 6:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 16:
+            return ['impute', 'encode', 'discretize', 'rebalance', 'features']
+        if id == 182:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 300:
+            return ['impute', 'encode', 'discretize', 'rebalance', 'features']
+        if id == 469:
+            return ['impute', 'encode', 'rebalance', 'discretize', 'features']
+        if id == 1461:
+            return ['impute', 'encode', 'normalize', 'rebalance', 'features']
+        if id == 1468:
+            return ['impute', 'encode', 'rebalance', 'discretize', 'features']
+        if id == 1494:
+            return ['impute', 'encode', 'discretize', 'features', 'rebalance']
+        if id == 40979:
+            return ['impute', 'encode', 'discretize', 'rebalance', 'features']
 
 
 if __name__ == "__main__":
