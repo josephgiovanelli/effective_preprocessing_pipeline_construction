@@ -53,39 +53,30 @@ def merge_dict(list):
     return new_dict
 
 def load_results(input_path, filtered_datasets):
-    comparison = {}
-    confs = [os.path.join(input_path, 'conf1'), os.path.join(input_path, 'conf2')]
-    for path in confs:
-        files = [f for f in listdir(path) if isfile(join(path, f))]
-        results = [f[:-5] for f in files if f[-4:] == 'json']
-        comparison[path] = {}
-        for algorithm in algorithms:
-            for dataset in filtered_datasets:
-                acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
-                acronym += '_' + str(dataset)
-                if acronym in results:
-                    with open(os.path.join(path, acronym + '.json')) as json_file:
-                        data = json.load(json_file)
-                        accuracy = data['context']['best_config']['score'] // 0.0001 / 100
-                        pipeline = str(data['context']['best_config']['pipeline']).replace(' ', '').replace(',', ' ')
-                        num_iterations = data['context']['iteration'] + 1
-                        best_iteration = data['context']['best_config']['iteration'] + 1
-                        baseline_score = data['context']['baseline_score'] // 0.0001 / 100
-                else:
-                    accuracy = 0
-                    pipeline = ''
-                    num_iterations = 0
-                    best_iteration = 0
-                    baseline_score = 0
+    result = {}
+    files = [f for f in listdir(input_path) if isfile(join(input_path, f))]
+    results = [f[:-5] for f in files if f[-4:] == 'json']
+    for algorithm in algorithms:
+        for dataset in filtered_datasets:
+            acronym = ''.join([a for a in algorithm if a.isupper()]).lower()
+            acronym += '_' + str(dataset)
+            if acronym in results:
+                with open(os.path.join(input_path, acronym + '.json')) as json_file:
+                    data = json.load(json_file)
+                    best_accuracy = data['context']['best_config']['score'] // 0.0001 / 100
+                    best_config = data['context']['best_config']['iteration']
+                    num_iterations = data['context']['iteration'] + 1
+                    baseline_score = data['context']['baseline_score'] // 0.0001 / 100
+                    history = data['context']['history']
 
-                comparison[path][acronym] = {}
-                comparison[path][acronym]['accuracy'] = accuracy
-                comparison[path][acronym]['baseline_score'] = baseline_score
-                comparison[path][acronym]['num_iterations'] = num_iterations
-                comparison[path][acronym]['best_iteration'] = best_iteration
-                comparison[path][acronym]['pipeline'] = pipeline
+                    result[acronym] = {}
+                    result[acronym]['best_accuracy'] = best_accuracy
+                    result[acronym]['best_config'] = best_config
+                    result[acronym]['num_iterations'] = num_iterations
+                    result[acronym]['baseline_score'] = baseline_score
+                    result[acronym]['history'] = history
 
-    return dict(collections.OrderedDict(sorted(merge_dict([comparison[confs[0]], comparison[confs[1]]]).items())))
+    return result
 
 def load_algorithm_results(input_path, filtered_datasets):
     results_map = {}
