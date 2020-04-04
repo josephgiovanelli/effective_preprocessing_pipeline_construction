@@ -16,32 +16,67 @@ def perform_pipeline_algorithm_analysis(results):
             'pipeline_iterations']
         pipelines_iterations.append(results[result]['pipeline_iterations'])
         algorithm_iterations.append(results[result]['algorithm_iterations'])
-        print(result, results[result]['pipeline_iterations'], results[result]['algorithm_iterations'])
+        #print(result, results[result]['pipeline_iterations'], results[result]['algorithm_iterations'])
     # print(min(pipelines_iterations), min(algorithm_iterations))
 
     scores = {}
     for result in results:
-        scores[result] = []
-        scores[result].append((0, results[result]['baseline_score']))
-        for i in range(1, 51):
-            scores[result].append((i, results[result]['history'][i - 1]['max_history_score'] // 0.0001 / 100))
-        for i in range(1, 51):
-            if i <= results[result]['algorithm_iterations']:
-                scores[result].append((50 + i,
-                                       results[result]['history'][results[result]['pipeline_iterations'] + i - 1][
-                                           'max_history_score'] // 0.0001 / 100))
-            else:
-                scores[result].append((50 + i, results[result]['best_accuracy']))
+        acronym = result.split('_')[0]
+        for key in [acronym, 'all']:
+            if not(key in scores):
+                scores[key] = {}
+            scores[key][result] = []
+            scores[key][result].append((0, results[result]['baseline_score']))
+            for i in range(1, 51):
+                scores[key][result].append((i, results[result]['history'][i - 1]['max_history_score'] // 0.0001 / 100))
+            for i in range(1, 51):
+                if i <= results[result]['algorithm_iterations']:
+                    scores[key][result].append((50 + i,
+                                           results[result]['history'][results[result]['pipeline_iterations'] + i - 1][
+                                               'max_history_score'] // 0.0001 / 100))
+                else:
+                    scores[key][result].append((50 + i, results[result]['best_accuracy']))
 
-    scores_to_mean = []
+    return perform_analysis(results, scores)
+
+
+def perform_algorithm_analysis(results):
+
+    scores = {}
+    for result in results:
+        acronym = result.split('_')[0]
+        for key in [acronym, 'all']:
+            if not (key in scores):
+                scores[key] = {}
+            scores[key][result] = []
+            scores[key][result].append((0, results[result]['baseline_score']))
+            for i in range(1, 101):
+                if i <= results[result]['num_iterations']:
+                    scores[key][result].append((i, results[result]['history'][i - 1]['max_history_score'] // 0.0001 / 100))
+                else:
+                    scores[key][result].append((i, results[result]['best_accuracy']))
+
+    return perform_analysis(results, scores)
+
+def perform_analysis(results, scores):
+    scores_to_mean = {}
+    outcome = {}
+
+    for result in results:
+        for i in range(0, 101):
+            acronym = result.split('_')[0]
+            for key in [acronym, 'all']:
+                if not (key in scores_to_mean):
+                    scores_to_mean[key] = []
+                    outcome[key] = []
+                try:
+                    scores_to_mean[key][i].append(scores[key][result][i][1])
+                except:
+                    scores_to_mean[key].append([])
+                    scores_to_mean[key][i].append(scores[key][result][i][1])
+
     for i in range(0, 101):
-        scores_to_mean.append([])
-        for result in results:
-            scores_to_mean[i].append(scores[result][i][1])
-
-    outcome = []
-
-    for i in range(0, 101):
-        outcome.append(mean(scores_to_mean[i]) // 0.01 / 100)
+        for key in outcome.keys():
+            outcome[key].append(mean(scores_to_mean[key][i]) // 0.01 / 100)
 
     return outcome
