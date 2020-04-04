@@ -1,5 +1,8 @@
 from statistics import mean
 
+import os
+
+
 def find_pipeline_iterations(history):
     for iteration in history:
         if iteration['step'] == 'pipeline':
@@ -80,3 +83,15 @@ def perform_analysis(results, scores):
             outcome[key].append(mean(scores_to_mean[key][i]) // 0.01 / 100)
 
     return outcome
+
+def save_analysis(analysis, result_path):
+
+    with open(os.path.join(result_path, 'result.csv'), 'w') as out:
+        out.write(','.join(analysis.keys()) + '\n')
+
+    with open(os.path.join(result_path, 'result.csv'), 'a') as out:
+        for i in range(0, 101):
+            row = []
+            for key in analysis.keys():
+                row.append(str(analysis[key][i]))
+            out.write(','.join(row) + '\n')

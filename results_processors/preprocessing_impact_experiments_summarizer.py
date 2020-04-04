@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from results_processors.preprocessing_impact_utils import perform_pipeline_algorithm_analysis, \
-    perform_algorithm_analysis
+    perform_algorithm_analysis, save_analysis
 from results_processors.results_cooking_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix, chi2tests, save_chi2tests, join_result_with_simple_meta_features, \
     get_results, modify_class
@@ -20,7 +20,6 @@ def parse_args():
     return args.input_pipeline, args.input_algorithm, args.output
 
 def main():
-    # configure environment
     input_pipeline, input_algorithm, result_path = parse_args()
     result_path = create_directory(result_path, 'summary')
     filtered_data_sets = [3, 6, 16, 182, 300, 469, 1461, 1468, 1494, 40979]
@@ -30,8 +29,18 @@ def main():
 
     pipeline_algorithm_analysis = perform_pipeline_algorithm_analysis(pipeline_algorithm_results)
     algorithm_analysis = perform_algorithm_analysis(algorithm_results)
-    print(pipeline_algorithm_analysis)
-    print(algorithm_analysis)
+
+    save_analysis(pipeline_algorithm_analysis, create_directory(result_path, 'pipeline_algorithm'))
+    save_analysis(algorithm_analysis, create_directory(result_path, 'algorithm'))
+    
+    # print(pipeline_algorithm_analysis)
+    # print(algorithm_analysis)
+
+    # print(','.join(pipeline_algorithm_analysis.keys()))
+    # for key, value in pipeline_algorithm_analysis.items():
+    #     print(key, value)
+
+
 
 
 
