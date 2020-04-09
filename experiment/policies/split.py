@@ -16,6 +16,29 @@ class Split(Policy):
         current_algo_configuration = {}
         trials_pipelines = Trials()
         trials_algo = Trials()
+
+        if self.config['time'] - self.config['step_pipeline'] > 0:
+            print('## Algorithm')
+            obj_algo = functools.partial(objective_algo,
+                    current_pipeline_config=current_pipeline_configuration,
+                    algorithm=self.config['algorithm'],
+                    X=X,
+                    y=y,
+                    context=self.context,
+                    config=self.config)
+            fmin(fn=obj_algo,
+                space=ALGORITHM_SPACE.get_domain_space(self.config['algorithm']),
+                algo=tpe.suggest,
+                max_evals=75,
+                max_time=80000,
+                trials=trials_algo,
+                show_progressbar=False,
+                verbose=0
+            )
+            best_config = self.context['best_config']
+            current_algo_configuration = best_config['algorithm']
+            super(Split, self).display_step_results(best_config)
+
         if self.config['step_pipeline'] > 0:
             print('## Data Pipeline')
             obj_pl = functools.partial(objective_pipeline,
@@ -29,34 +52,13 @@ class Split(Policy):
                 fn=obj_pl, 
                 space=self.PIPELINE_SPACE,
                 algo=tpe.suggest, 
-                max_evals=self.config['step_pipeline'],
-                max_time=None,
+                max_evals=75,
+                max_time=80000,
                 trials=trials_pipelines,
                 show_progressbar=False,
                 verbose=0
             )
-            best_config = self.context['best_config']
-            current_pipeline_configuration = best_config['pipeline']
-            super(Split, self).display_step_results(best_config)
-            
-        if self.config['time'] - self.config['step_pipeline'] > 0:
-            print('## Algorithm')
-            obj_algo = functools.partial(objective_algo, 
-                    current_pipeline_config=current_pipeline_configuration,
-                    algorithm=self.config['algorithm'],
-                    X=X,
-                    y=y,
-                    context=self.context,
-                    config=self.config)
-            fmin(fn=obj_algo, 
-                space=ALGORITHM_SPACE.get_domain_space(self.config['algorithm']), 
-                algo=tpe.suggest, 
-                max_evals=self.config['time'] - self.config['step_pipeline'],
-                max_time=None,
-                trials=trials_algo,
-                show_progressbar=False,
-                verbose=0
-            )
+
 
         best_config = self.context['best_config']
         super(Split, self).display_step_results(best_config)
