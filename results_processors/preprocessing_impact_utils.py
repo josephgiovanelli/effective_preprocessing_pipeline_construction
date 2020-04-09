@@ -2,6 +2,10 @@ from statistics import mean
 
 import os
 
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 
 def find_pipeline_iterations(history):
     for iteration in history:
@@ -74,3 +78,15 @@ def save_analysis(analysis, result_path):
             for key in analysis.keys():
                 row.append(str(analysis[key][i]))
             out.write(','.join(row) + '\n')
+
+    x = np.linspace(0, 100, 100)
+
+    plt.plot(x, analysis['rf'], label='Random Forest')
+    plt.plot(x, analysis['knn'], label='K-Nearest Neighbor')
+    plt.plot(x, analysis['nb'], label='Naive Bayes')
+    plt.xlabel('Configurations visited')
+    plt.ylabel('Improvement score')
+    plt.title("Optimization on bank-marketing data-set")
+    plt.legend()
+    plt.xlim(0, 100)
+    plt.savefig(os.path.join(result_path, 'result_with_impact.png'))
