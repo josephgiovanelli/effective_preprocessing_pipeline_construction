@@ -81,9 +81,9 @@ def save_analysis(analysis, result_path):
 
     x = np.linspace(0, 100, 100)
 
-    plt.plot(x, analysis['rf'], label='RandomForest', linewidth=2.5)
-    plt.plot(x, analysis['knn'], label='KNearestNeighbor', linewidth=2.5)
-    plt.plot(x, analysis['nb'], label='NaiveBayes', linewidth=2.5)
+    plt.plot(x, analysis['nb'], label='NV', linewidth=2.5, color='lightcoral')
+    plt.plot(x, analysis['knn'], label='KNN', linewidth=2.5, color='darkturquoise')
+    plt.plot(x, analysis['rf'], label='RF', linewidth=2.5, color='violet')
     plt.xlabel('Configurations visited')
     plt.ylabel('Improvement score in terms of predictive accuracy')
     plt.title("Optimization on bank-marketing data-set")
