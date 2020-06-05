@@ -81,12 +81,12 @@ def save_analysis(analysis, result_path):
 
     x = np.linspace(0, 100, 100)
 
-    plt.plot(x, analysis['nb'], label='NV', linewidth=2.5, color='lightcoral')
+    plt.plot(x, analysis['nb'], label='NB', linewidth=2.5, color='lightcoral')
     plt.plot(x, analysis['knn'], label='KNN', linewidth=2.5, color='darkturquoise')
     plt.plot(x, analysis['rf'], label='RF', linewidth=2.5, color='violet')
     plt.xlabel('Configurations visited')
-    plt.ylabel('Improvement score in terms of predictive accuracy')
-    plt.title("Optimization on bank-marketing data-set")
+    plt.ylabel('Improvement ratio of predictive accuracy')
+    #plt.title("Optimization on bank-marketing data-set")
     plt.legend()
     plt.xlim(0, 100)
     plt.axvline(x=50, color='#aaaaaa', linestyle='--')
@@ -95,4 +95,4 @@ def save_analysis(analysis, result_path):
     plt.xticks(np.linspace(0, 100, 11))
     fig = plt.gcf()
     fig.set_size_inches(10, 5, forward=True)
-    fig.savefig(os.path.join(result_path, 'result_with_impact.pdf'))
+    fig.savefig(os.path.join(result_path, 'pre-processing-impact.pdf'))
