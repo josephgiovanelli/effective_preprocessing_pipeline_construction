@@ -5,12 +5,13 @@ import numpy as np
 
 def main():
     data = {}
-    data[0] = {'title': r'$T_1$ = Features, $T_2$ = Normalize', 'data': pd.read_csv('../results/pipeline/features_normalizer/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Features', 'data': pd.read_csv('../results/pipeline/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    data[2] = {'title': r'$T_1$ = Features, $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[0] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Normalize', 'data': pd.read_csv('../results/pipeline/features_normalizer/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Feat. Eng.', 'data': pd.read_csv('../results/pipeline/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[2] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[3] = {'title': r'$T_1$ = Discretize, $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/discretize_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     labels = [r'$T_1$', r'$T_2$', r'$T_1$ or $T_2$', r'$T_1 \to T_2$', r'$T_2 \to T_1$', 'Draw', 'Baseline']
     colors = ['gold', 'mediumspringgreen', 'slategrey', 'royalblue', 'sienna', 'mediumpurple', 'salmon']
+    patterns = ["/", "\\", "|", "o", "+", ".", "x", "O", "-", "*"]
 
     SMALL_SIZE = 8
     MEDIUM_SIZE = 22
@@ -34,7 +35,7 @@ def main():
             bar_width = 0.2
 
             for k in range(1, 8):
-                axs[i, j].bar((index * bar_width * 11) + (bar_width * (k - 1)), data[i * 2 + j]['data'].iloc[:-1, k], bar_width, label=labels[k - 1], color=colors[k - 1])
+                axs[i, j].bar((index * bar_width * 11) + (bar_width * (k - 1)), data[i * 2 + j]['data'].iloc[:-1, k], bar_width, label=labels[k - 1], color=colors[k - 1], hatch=patterns[k - 1])
 
             axs[i, j].set(ylabel='Number of wins')
             axs[i, j].set_title(data[i * 2 + j]['title'])
