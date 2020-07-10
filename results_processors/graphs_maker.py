@@ -9,9 +9,9 @@ def main():
     data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Feat. Eng.', 'data': pd.read_csv('../results/pipeline/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[2] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[3] = {'title': r'$T_1$ = Discretize, $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/discretize_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    labels = [r'$T_1$', r'$T_2$', r'$T_1$ or $T_2$', r'$T_1 \to T_2$', r'$T_2 \to T_1$', 'Draw', 'Baseline']
-    colors = ['gold', 'mediumspringgreen', 'slategrey', 'royalblue', 'sienna', 'mediumpurple', 'salmon']
-    patterns = ["/", "\\", "|", "o", "+", ".", "x", "O", "-", "*"]
+    labels = [r'$T_1$', r'$T_2$', r'$T_1 \to T_2$', r'$T_2 \to T_1$', 'Baseline']
+    colors = ['gold', 'mediumspringgreen', 'royalblue', 'sienna', 'mediumpurple', 'salmon']
+    patterns = ["/", "\\", "o", "-", "x", ".", "O", "+", "*", "|"]
 
     SMALL_SIZE = 8
     MEDIUM_SIZE = 22
@@ -28,19 +28,24 @@ def main():
     fig, axs = plt.subplots(2, 2)
     n_groups = 3
 
+    print(data[0]['data'].drop(columns=['inconsistent', 'not_exec', 'not_exec_once']))
+
     for i in range(0, 2):
         for j in range(0, 2):
             #fig2, ax = axs[i, j].subplots()
+            data[i * 2 + j]['data'].columns = list(range(0, len(data[i * 2 + j]['data'].columns)))
+            data[i * 2 + j]['data'] = data[i * 2 + j]['data'].drop(columns=[3, 6])
+            print(data[i * 2 + j]['data'])
             index = np.arange(n_groups)
-            bar_width = 0.2
+            bar_width = 0.4
 
-            for k in range(1, 8):
-                axs[i, j].bar((index * bar_width * 11) + (bar_width * (k - 1)), data[i * 2 + j]['data'].iloc[:-1, k], bar_width, label=labels[k - 1], color=colors[k - 1], hatch=patterns[k - 1])
+            for k in range(1, 6):
+                axs[i, j].bar((index * bar_width * 8) + (bar_width * (k - 1)), data[i * 2 + j]['data'].iloc[:-1, k], bar_width, label=labels[k - 1], color=colors[k - 1], hatch=patterns[k - 1])
 
             axs[i, j].set(ylabel='Number of wins')
             axs[i, j].set_title(data[i * 2 + j]['title'])
             axs[i, j].set_ylim([0, 32])
-            plt.setp(axs, xticks=(index * bar_width * 11) + 0.6, xticklabels=['NB', 'KNN', 'RF'])
+            plt.setp(axs, xticks=(index * bar_width * 8) + 0.8, xticklabels=['NB', 'KNN', 'RF'])
 
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = dict(zip(labels, handles))
