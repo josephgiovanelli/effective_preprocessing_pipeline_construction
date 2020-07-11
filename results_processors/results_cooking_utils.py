@@ -12,7 +12,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from commons import algorithms
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors']
 
 
 def max_frequency(x):
@@ -123,7 +123,7 @@ def join_result_with_extracted_meta_features(data, impute):
 
 
 def join_result_with_simple_meta_features(filtered_datasets, data):
-    meta = pd.read_csv('meta_features/simple-meta-features.csv')
+    meta = pd.read_csv('results_processors/meta_features/simple-meta-features.csv')
     meta = meta.loc[meta['did'].isin(filtered_datasets)]
     meta = meta.drop(columns=['version', 'status', 'format', 'uploader', 'row', 'name'])
     meta = meta.astype(int)

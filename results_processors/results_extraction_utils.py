@@ -7,7 +7,12 @@ import pandas as pd
 from os import listdir
 from os.path import isfile, join
 
-from commons import benchmark_suite, algorithms
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors']
+benchmark_suite = [3, 6, 11, 12, 14, 15, 16, 18, 22, 23, 28, 29, 31, 32, 37, 44, 46, 50, 54, 151, 182, 188, 38, 307,
+                       300, 458, 469, 554, 1049, 1050, 1053, 1063, 1067, 1068, 1590, 4134, 1510, 1489, 1494, 1497, 1501,
+                       1480, 1485, 1486, 1487, 1468, 1475, 1462, 1464, 4534, 6332, 1461, 4538, 1478, 23381, 40499,
+                       40668, 40966, 40982, 40994, 40983, 40975, 40984, 40979, 40996, 41027, 23517, 40923, 40927, 40978,
+                       40670, 40701]
 
 
 def create_possible_categories(pipeline):
@@ -34,7 +39,7 @@ def create_possible_categories(pipeline):
             'not_exec_once': not_exec_once}
 
 def get_filtered_datasets():
-    df = pd.read_csv('meta_features/simple-meta-features.csv')
+    df = pd.read_csv('results_processors/meta_features/simple-meta-features.csv')
     df = df.loc[df['did'].isin(benchmark_suite)]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
@@ -138,7 +143,7 @@ def save_simple_results(result_path, simple_results, filtered_datasets):
             out.write('dataset,name,dimensions,' + header + '\n')
 
 
-    df = pd.read_csv('meta_features/simple-meta-features.csv')
+    df = pd.read_csv('results_processors/meta_features/simple-meta-features.csv')
     df = df.loc[df['did'].isin(filtered_datasets)]
 
     for key, value in simple_results.items():

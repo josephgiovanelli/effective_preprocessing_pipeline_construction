@@ -5,10 +5,10 @@ import numpy as np
 
 def main():
     data = {}
-    data[0] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Normalize', 'data': pd.read_csv('../results/pipeline/features_normalizer/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Feat. Eng.', 'data': pd.read_csv('../results/pipeline/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    data[2] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
-    data[3] = {'title': r'$T_1$ = Discretize, $T_2$ = Rebalance', 'data': pd.read_csv('../results/pipeline/discretize_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[0] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Normalize', 'data': pd.read_csv('results/pipeline_construction/features_normalizer/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Feat. Eng.', 'data': pd.read_csv('results/pipeline_construction/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[2] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Rebalance', 'data': pd.read_csv('results/pipeline_construction/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[3] = {'title': r'$T_1$ = Discretize, $T_2$ = Rebalance', 'data': pd.read_csv('results/pipeline_construction/discretize_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     labels = [r'$T_1$', r'$T_2$', r'$T_1 \to T_2$', r'$T_2 \to T_1$', 'Baseline']
     colors = ['gold', 'mediumspringgreen', 'royalblue', 'sienna', 'mediumpurple', 'salmon']
     patterns = ["/", "\\", "o", "-", "x", ".", "O", "+", "*", "|"]
@@ -53,7 +53,7 @@ def main():
     text = fig.text(-0.2, 1.05, "", transform=axs[1,1].transAxes)
     fig.set_size_inches(20, 10, forward=True)
     fig.tight_layout(h_pad=3.0, w_pad=4.0)
-    fig.savefig('../results/graphs/experiments_results.pdf', bbox_extra_artists=(lgd,text), bbox_inches='tight')
+    fig.savefig('results/pipeline_construction/experiments_results.pdf', bbox_extra_artists=(lgd,text), bbox_inches='tight')
 
     SMALL_SIZE = 8
     MEDIUM_SIZE = 17
@@ -97,6 +97,6 @@ def main():
     text = fig.text(-0.2, 1.05, "", transform=axs[3].transAxes)
     fig.set_size_inches(20, 5, forward=True)
     fig.tight_layout(w_pad=4.0)
-    fig.savefig('../results/graphs/experiments_validity.pdf', bbox_extra_artists=(lgd,text), bbox_inches='tight')
+    fig.savefig('results/pipeline_construction/experiments_validity.pdf', bbox_extra_artists=(lgd,text), bbox_inches='tight')
 
 main()
