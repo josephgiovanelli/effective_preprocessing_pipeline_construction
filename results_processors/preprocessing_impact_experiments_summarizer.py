@@ -1,12 +1,12 @@
 from __future__ import print_function
 
-from results_processors.preprocessing_impact_utils import perform_algorithm_pipeline_analysis, save_analysis
-from results_processors.results_cooking_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
+from preprocessing_impact_utils import perform_algorithm_pipeline_analysis, save_analysis
+from results_cooking_utils import create_num_equal_elements_matrix, save_num_equal_elements_matrix, \
     create_correlation_matrix, save_correlation_matrix, chi2tests, save_chi2tests, join_result_with_simple_meta_features, \
     get_results, modify_class
-from results_processors.results_extraction_utils import create_possible_categories, get_filtered_datasets, \
+from results_extraction_utils import create_possible_categories, get_filtered_datasets, \
     extract_results, save_results, load_results
-from results_processors.utils import create_directory
+from utils import create_directory
 
 import argparse
 

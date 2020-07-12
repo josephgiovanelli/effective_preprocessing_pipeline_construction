@@ -7,8 +7,10 @@ import openml
 import pandas as pd
 
 from commons import benchmark_suite, algorithms
+from results_processors.utils import create_directory
 
-SCENARIO_PATH = './scenarios/'
+SCENARIO_PATH = create_directory('./' ,'scenarios')
+SCENARIO_PATH = create_directory(SCENARIO_PATH ,'preprocessing_impact')
 
 policies = ['split']
 
@@ -84,22 +86,34 @@ for id in get_filtered_datasets():
                 id,
                 policy.title()
             )
-            '''
-            if policy == 'split':
-                runtime = scenario['setup']['runtime']
-                step = policies_config['split']['step_pipeline']
-                ranges = [i for i in range(0, runtime+step, step)]
-                for r in ranges:
-                    scenario['policy']['step_pipeline'] = r
-                    path = os.path.join('./scenarios', '{}_{}_{}_{}.yaml'.format(b, task_id, policy, r))
-                    __write_scenario(path, scenario)
-            else:
-                path = os.path.join('./scenarios', '{}_{}_{}.yaml'.format(b, task_id, policy))
-                __write_scenario(path, scenario)
-            '''
             runtime = scenario['setup']['runtime']
             step = policies_config['split']['step_pipeline']
             scenario['policy']['step_pipeline'] = step
-            path = os.path.join(SCENARIO_PATH, '{}_{}.yaml'.format(b, id))
+            path = create_directory(SCENARIO_PATH, "algorithm_pipeline")
+            path = os.path.join(path, '{}_{}.yaml'.format(b, id))
+            __write_scenario(path, scenario)
+
+for id in get_filtered_datasets():
+    print('# DATASET: {}'.format(id))
+    for algorithm in algorithms:
+        print('## ALGORITHM: {}'.format(algorithm))
+        for policy in policies:
+            scenario = copy.deepcopy(base)
+            scenario['setup']['dataset'] = id
+            scenario['setup']['algorithm'] = algorithm
+            scenario['setup']['policy'] = policy
+            scenario['policy'] = copy.deepcopy(policies_config[policy])
+            a = re.sub(r"(\w)([A-Z])", r"\1 \2", algorithm)
+            b = ''.join([c for c in algorithm if c.isupper()]).lower()
+            scenario['title'] = '{} on dataset n {} with {} policy'.format(
+                a,
+                id,
+                policy.title()
+            )
+            runtime = policies_config['split']['step_pipeline']
+            step = 0
+            scenario['policy']['step_pipeline'] = step
+            path = create_directory(SCENARIO_PATH, "algorithm")
+            path = os.path.join(path, '{}_{}.yaml'.format(b, id))
             __write_scenario(path, scenario)
 

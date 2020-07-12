@@ -7,7 +7,9 @@ import pandas as pd
 from os import listdir
 from os.path import isfile, join
 
-from commons import benchmark_suite, algorithms
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors']
+benchmark_suite = [1461]
+
 
 
 def create_possible_categories(pipeline):

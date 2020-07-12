@@ -12,7 +12,8 @@ import os
 import numpy as np
 import pandas as pd
 
-from commons import algorithms
+algorithms = ['RandomForest', 'NaiveBayes', 'KNearestNeighbors']
+
 
 
 def max_frequency(x):
