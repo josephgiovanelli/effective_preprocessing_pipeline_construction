@@ -20,7 +20,7 @@ parser.add_argument("-p", "--pipeline", nargs="+", type=str, required=True, help
 parser.add_argument("-r", "--result_path", nargs="?", type=str, required=True, help="path where put the results")
 args = parser.parse_args()
 
-SCENARIO_PATH = './scenarios/'
+SCENARIO_PATH = './scenarios/pipeline_construction'
 RESULT_PATH = './'
 for directory in args.result_path.split("/"):
     RESULT_PATH = create_directory(RESULT_PATH , str(directory))

@@ -10,6 +10,7 @@ from results_processors.utils import parse_args, create_directory
 
 
 SCENARIO_PATH = create_directory('./' ,'scenarios')
+SCENARIO_PATH = create_directory(SCENARIO_PATH ,'pipeline_construction')
 
 policies = ['split']
 
