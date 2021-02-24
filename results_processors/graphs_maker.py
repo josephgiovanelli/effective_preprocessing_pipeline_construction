@@ -5,7 +5,7 @@ import numpy as np
 
 def main():
     data = {}
-    data[0] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Normalize', 'data': pd.read_csv('results/pipeline_construction/features_normalizer/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
+    data[0] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Normalize', 'data': pd.read_csv('results/pipeline_construction/features_normalize/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[1] = {'title': r'$T_1$ = Discretize, $T_2$ = Feat. Eng.', 'data': pd.read_csv('results/pipeline_construction/discretize_features/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[2] = {'title': r'$T_1$ = Feat. Eng., $T_2$ = Rebalance', 'data': pd.read_csv('results/pipeline_construction/features_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
     data[3] = {'title': r'$T_1$ = Discretize, $T_2$ = Rebalance', 'data': pd.read_csv('results/pipeline_construction/discretize_rebalance/summary/algorithms_summary/summary.csv').reindex([1, 0, 2, 3])}
