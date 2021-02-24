@@ -65,7 +65,7 @@ def get_filtered_datasets():
         second = set(second)
         return [item for item in first if item not in second]
     df = pd.read_csv("results_processors/meta_features/simple-meta-features.csv")
-    df = df.loc[df['did'].isin(diff(extended_benchmark_suite, benchmark_suite))]
+    df = df.loc[df['did'].isin(diff([10, 20, 26], benchmark_suite))]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
     df = df.loc[df['NumberOfInstances'] * df['NumberOfFeatures'] < 5000000]
