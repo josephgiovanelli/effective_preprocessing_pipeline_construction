@@ -43,7 +43,7 @@ def create_possible_categories(pipeline):
 
 def get_filtered_datasets():
     df = pd.read_csv('results_processors/meta_features/simple-meta-features.csv')
-    df = df.loc[df['did'].isin(extended_benchmark_suite)]
+    df = df.loc[df['did'].isin(list(dict.fromkeys(benchmark_suite + extended_benchmark_suite)))]
     df = df.loc[df['NumberOfMissingValues'] / (df['NumberOfInstances'] * df['NumberOfFeatures']) < 0.1]
     df = df.loc[df['NumberOfInstancesWithMissingValues'] / df['NumberOfInstances'] < 0.1]
     df = df.loc[df['NumberOfInstances'] * df['NumberOfFeatures'] < 5000000]
@@ -418,9 +418,57 @@ def extract_results(input_path, filtered_data_sets, pipeline, categories):
 
     return simple_results, grouped_by_algorithm_results, grouped_by_data_set_result, summary
 
+def compute_summary_from_data_set_results(dataset_results, categories):
+    summary = { algorithm: { category: 0 for _, category in categories.items() } for algorithm in ['knn', 'nb', 'rf'] }
+    for _, results in dataset_results.items():
+        for algorithm, category in results.items():
+            summary[algorithm][category] += 1
+    return summary
+
+def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories):
+    from sklearn.model_selection import RepeatedKFold
+
+    # load and format the results
+    simple_results = load_results(input_path, filtered_data_sets)
+    simple_results = rich_simple_results(simple_results, pipeline, categories)
+
+    # summarize the results
+    grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
+    
+    rkf = RepeatedKFold(n_splits=4, n_repeats=4, random_state=2652124)
+
+    summaries = []
+    datasets = list(grouped_by_data_set_result.keys())
+    for train_index, test_index in rkf.split(datasets):
+        train_dict = { datasets[your_key]: grouped_by_data_set_result[datasets[your_key]] for your_key in train_index }
+        test_dict = { datasets[your_key]: grouped_by_data_set_result[datasets[your_key]] for your_key in test_index }
+        train_per_algorithm = compute_summary_from_data_set_results(train_dict, categories)
+        train_summary = compute_summary(train_per_algorithm, categories)
+        train_per_algorithm['summary'] = train_summary
+        test_per_algorithm = compute_summary_from_data_set_results(test_dict, categories)
+        test_summary = compute_summary(test_per_algorithm, categories)
+        test_per_algorithm['summary'] = test_summary
+        summaries.append({'train': train_per_algorithm, 'test': test_per_algorithm})
+    
+    return summaries
+
 def save_results(result_path, filtered_data_sets, simple_results, grouped_by_algorithm_results, summary):
     save_simple_results(result_path, simple_results, filtered_data_sets)
     save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
+
+def save_results_4x4cv(result_path, summaries):
+    for batch in range(len(summaries)):
+        for set_, results in summaries[batch].items():
+            with open(os.path.join(result_path, str(batch + 1) + set_ + '.csv'), 'w') as out:
+                out.write(',' + ','.join(results['summary'].keys()) + '\n')
+                for key, value in results.items():
+                    row = key
+                    for k, v in value.items():
+                        row += ',' + str(v)
+                    row += '\n'
+                    out.write(row)
+            
+
 
 def merge_results(pipeline_results, algorithm_results):
     comparison = {}
