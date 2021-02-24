@@ -178,7 +178,7 @@ def save_correlation_matrix(result_path, name, correlation_matrix, group_no_orde
 def save_train_meta_learner(result_path, name, train_meta_learner, group_no_order):
     save_data_frame(os.path.join(result_path, name + ( '_grouped' if group_no_order else '') + '.csv'), train_meta_learner, index=False)
 
-def chi2test(observed, distribution):
+def chi2test(observed, distribution, prob = 0.95):
     # the print after the first '->' are valid just if we comparing the observed frequencies with the uniform distribution
     table = [observed, distribution]
     stat, p, dof, expected = chi2_contingency(table)
@@ -188,7 +188,6 @@ def chi2test(observed, distribution):
 
     # interpret test-statistic
     # stat is high as much as the two distribution are different
-    prob = 0.95
     critical = chi2.ppf(prob, dof)
     statistic_test = abs(stat) >= critical
     # print('probability=%.3f, critical=%.3f, stat=%.3f' % (prob, critical, stat))
