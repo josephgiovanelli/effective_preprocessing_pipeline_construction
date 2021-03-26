@@ -435,7 +435,7 @@ def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories):
     # summarize the results
     grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
     
-    rkf = RepeatedKFold(n_splits=4, n_repeats=4, random_state=2652124)
+    rkf = RepeatedKFold(n_splits=4, n_repeats=4, random_state=1)
 
     summaries = []
     datasets = list(grouped_by_data_set_result.keys())
