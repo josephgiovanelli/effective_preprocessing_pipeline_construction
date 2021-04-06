@@ -44,7 +44,7 @@ def main():
 
             axs[i, j].set(ylabel='Number of wins')
             axs[i, j].set_title(data[i * 2 + j]['title'])
-            axs[i, j].set_ylim([0, 32])
+            axs[i, j].set_ylim([0, 40])
             plt.setp(axs, xticks=(index * bar_width * 8) + 0.8, xticklabels=['NB', 'KNN', 'RF'])
 
     handles, labels = plt.gca().get_legend_handles_labels()

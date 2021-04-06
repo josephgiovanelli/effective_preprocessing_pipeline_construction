@@ -425,7 +425,7 @@ def compute_summary_from_data_set_results(dataset_results, categories):
             summary[algorithm][category] += 1
     return summary
 
-def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories):
+def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories, folds, repeat):
     from sklearn.model_selection import RepeatedKFold
 
     # load and format the results
@@ -435,7 +435,7 @@ def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories):
     # summarize the results
     grouped_by_algorithm_results, grouped_by_data_set_result = aggregate_results(simple_results, categories)
     
-    rkf = RepeatedKFold(n_splits=4, n_repeats=4, random_state=1)
+    rkf = RepeatedKFold(n_splits=folds, n_repeats=repeat, random_state=1)
 
     summaries = []
     datasets = list(grouped_by_data_set_result.keys())
