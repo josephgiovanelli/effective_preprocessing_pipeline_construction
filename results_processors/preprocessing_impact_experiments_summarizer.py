@@ -29,7 +29,8 @@ def main():
     pipeline_algorithm_analysis = perform_algorithm_pipeline_analysis(pipeline_algorithm_results)
     #algorithm_analysis = perform_algorithm_analysis(algorithm_results)
 
-    save_analysis(pipeline_algorithm_analysis, create_directory(result_path, 'algorithm_pipeline'))
+    result_path = create_directory(result_path, 'algorithm_pipeline')
+    save_analysis(pipeline_algorithm_analysis, result_path)
     #save_analysis(algorithm_analysis, create_directory(result_path, 'algorithm'))
     
     # print(pipeline_algorithm_analysis)

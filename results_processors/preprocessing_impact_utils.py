@@ -81,6 +81,18 @@ def save_analysis(analysis, result_path):
 
     x = np.linspace(0, 100, 100)
 
+    SMALL_SIZE = 14
+    MEDIUM_SIZE = 16
+    BIGGER_SIZE = 18
+
+    plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=BIGGER_SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=BIGGER_SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=MEDIUM_SIZE)  # legend fontsize
+    plt.rc('figure', titlesize=MEDIUM_SIZE)  # fontsize of the figure title
+
     plt.plot(x, analysis['nb'], label='NB', linewidth=2.5, color='lightcoral')
     plt.plot(x, analysis['knn'], label='KNN', linewidth=2.5, color='darkturquoise')
     plt.plot(x, analysis['rf'], label='RF', linewidth=2.5, color='violet')
@@ -94,5 +106,5 @@ def save_analysis(analysis, result_path):
     plt.tick_params(axis ='both', which ='both', length = 5, color='#aaaaaa')
     plt.xticks(np.linspace(0, 100, 11))
     fig = plt.gcf()
-    fig.set_size_inches(10, 5, forward=True)
+    fig.set_size_inches(12, 6, forward=True)
     fig.savefig(os.path.join(result_path, 'pre-processing-impact.pdf'))
