@@ -425,7 +425,7 @@ def compute_summary_from_data_set_results(dataset_results, categories):
             summary[algorithm][category] += 1
     return summary
 
-def extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories, folds, repeat):
+def extract_results_10x4cv(input_path, filtered_data_sets, pipeline, categories, folds, repeat):
     from sklearn.model_selection import RepeatedKFold
 
     # load and format the results
@@ -456,7 +456,7 @@ def save_results(result_path, filtered_data_sets, simple_results, grouped_by_alg
     save_simple_results(result_path, simple_results, filtered_data_sets)
     save_grouped_by_algorithm_results(result_path, grouped_by_algorithm_results, summary)
 
-def save_results_4x4cv(result_path, summaries):
+def save_results_10x4cv(result_path, summaries):
     for batch in range(len(summaries)):
         for set_, results in summaries[batch].items():
             with open(os.path.join(result_path, str(batch + 1) + set_ + '.csv'), 'w') as out:

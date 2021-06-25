@@ -4,7 +4,7 @@ from results_cooking_utils import create_num_equal_elements_matrix, save_num_equ
     create_correlation_matrix, save_correlation_matrix, chi2test, chi2tests, save_chi2tests, \
     join_result_with_simple_meta_features, \
     get_results, modify_class
-from results_extraction_utils import create_possible_categories, get_filtered_datasets, extract_results_4x4cv, save_results_4x4cv
+from results_extraction_utils import create_possible_categories, get_filtered_datasets, extract_results_10x4cv, save_results_10x4cv
 from utils import parse_args, create_directory
 import pandas as pd
 import numpy as np
@@ -19,9 +19,9 @@ def main():
     filtered_data_sets = get_filtered_datasets()
     folds, repeat = 4, 10
 
-    summaries = extract_results_4x4cv(input_path, filtered_data_sets, pipeline, categories, folds, repeat)
+    summaries = extract_results_10x4cv(input_path, filtered_data_sets, pipeline, categories, folds, repeat)
 
-    save_results_4x4cv(create_directory(result_path, 'raw'), summaries)
+    save_results_10x4cv(create_directory(result_path, 'raw'), summaries)
 
     prob = 0.95
     results = pd.DataFrame()
