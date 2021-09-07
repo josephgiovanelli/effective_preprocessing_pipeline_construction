@@ -43,6 +43,7 @@ def main():
                 axs[i, j].bar((index * bar_width * 8) + (bar_width * (k - 1)), data[i * 2 + j]['data'].iloc[:-1, k], bar_width, label=labels[k - 1], color=colors[k - 1], hatch=patterns[k - 1])
 
             axs[i, j].set(ylabel='Number of wins')
+            axs[i, j].set(xlabel='Algorithms')
             axs[i, j].set_title(data[i * 2 + j]['title'])
             axs[i, j].set_ylim([0, 40])
             plt.setp(axs, xticks=(index * bar_width * 8) + 0.8, xticklabels=['NB', 'KNN', 'RF'])
