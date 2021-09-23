@@ -97,7 +97,7 @@ def save_analysis(analysis, result_path):
     plt.plot(x, analysis['knn'], label='KNN', linewidth=2.5, color='darkturquoise')
     plt.plot(x, analysis['rf'], label='RF', linewidth=2.5, color='violet')
     plt.xlabel('Configurations visited')
-    plt.ylabel('Improvement ratio of predictive accuracy')
+    plt.ylabel('Ratio of predictive accuracy change')
     #plt.title("Optimization on bank-marketing data-set")
     plt.legend()
     plt.xlim(0, 100)
